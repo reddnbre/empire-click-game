@@ -1,45 +1,103 @@
-# EmpireClick - 3D Kingdom Game
+# 🏰 EmpireClick Game
 
-A browser-based idle/clicker game where players claim plots of land, build structures, and earn income.
+A browser-based empire building game where players claim land plots, manage resources, and build their wealth through strategic land ownership.
 
-## Project Structure
+## 🎮 Play Now
 
-The original large HTML file has been broken down into separate, manageable files:
+**[Play EmpireClick Game](https://reddnbre.github.io/empire-click-game/)**
 
-### Files:
-- **`index.html`** - Main HTML structure with game layout
-- **`styles.css`** - All CSS styles for the game interface
-- **`game.js`** - Core game logic and mechanics
-- **`ui.js`** - UI helper functions and event handlers
+## 🎯 Game Features
 
-### Features:
-- **Plot System**: 500 plots (25x20 grid) that can be claimed and built on
-- **Rarity System**: 5 rarity levels (Common, Rare, Epic, Legendary, Elite)
-- **Earnings System**: Passive income generation from owned plots
-- **Daily Login**: Bonus system with random rewards
-- **Achievement System**: Unlock achievements as you progress
-- **3D Camera**: Navigate the world with WASD keys
-- **Responsive Design**: Works on different screen sizes
+### **Land Management**
+- Claim plots of land with different rarities (Common, Rare, Epic, Legendary, Elite)
+- Each plot generates earnings over time
+- Strategic plot placement and management
 
-### How to Play:
-1. Click on unclaimed plots to purchase them
-2. Each plot has a random rarity that determines earnings
-3. Use WASD keys to navigate the world
-4. Complete daily logins for bonus multipliers
-5. Explore claimed plots to find additional rewards
+### **Economy System**
+- **Player Income:** RevCoins from land plots
+- **Admin Revenue:** Premium RevCoins (PRC) via Treasury system
+- Property tax system with 3-ad or 125 PRC payment options
 
-### Game Mechanics:
-- **Plot Costs**: 100 RevCoins (Common-Rare), 1000 Premium RevCoins (Elite)
-- **Earnings**: Based on plot rarity and multipliers
-- **Explorations**: Use "Finds" to explore plots for bonus rewards
-- **Daily Login**: Watch ads to roll for bonus multipliers
+### **Tax & Treasury System**
+- **Property Tax:** Clear by watching 3 ads OR paying 125 PRC
+- **Wealth Tax:** Watch ads to bypass for 30 minutes
+- **Treasury Pool:** Community fund for King's Draw and rewards
 
-### Development:
-The code is now modular and easier to maintain:
-- **HTML**: Clean structure with external CSS/JS links
-- **CSS**: Organized styles with comments
-- **JavaScript**: Separated into game logic and UI functions
-- **Extensible**: Easy to add new features or modify existing ones
+### **Special Features**
+- **King's Draw:** Weekly lottery with PRC prizes
+- **Land Takeover:** Reclaim abandoned plots for 125 PRC
+- **Daily Login Bonuses:** Streak-based rewards
+- **Achievement System:** Unlock achievements as you progress
 
-### Running the Game:
-Simply open `index.html` in a web browser to start playing! 
+## 🚀 How to Play
+
+1. **Open the game** in your browser
+2. **Navigate** around the map using arrow keys or WASD
+3. **Claim plots** by clicking on unclaimed land
+4. **Manage your empire** through the various panels
+5. **Earn RevCoins** from your land plots
+6. **Participate** in events and special features
+
+## 🛠️ Technical Details
+
+- **Pure HTML5/JavaScript** - No server required
+- **Responsive design** - Works on desktop and mobile
+- **Local storage** - Progress saved in your browser
+- **No external dependencies** - Runs entirely in the browser
+
+## 📁 File Structure
+
+```
+empire-click-game/
+├── index.html          # Main game file
+├── game.js             # Core game logic
+├── game.actions.js     # Action handlers
+├── ui.js               # UI management
+├── sprites.js          # Sprite rendering
+├── styles.css          # Game styling
+├── assets/             # Game assets
+│   ├── images/         # Castle sprites
+│   └── audio/          # Background music
+└── README.md           # This file
+```
+
+## 🎨 Game Mechanics
+
+### **Land Rarities**
+- **Common:** Basic plots with standard earnings
+- **Rare:** Better earnings rate
+- **Epic:** High earnings potential
+- **Legendary:** Premium plots with excellent returns
+- **Elite:** Top-tier plots with maximum earnings
+
+### **Tax System**
+- **Property Tax:** 6-hour cycle, clear with ads or PRC
+- **Wealth Tax:** Efficiency based on plot count
+- **Audit Infractions:** Random events requiring settlement
+
+## 🌟 Recent Updates
+
+- ✅ Property tax system now works like audit infractions (3 ads OR 125 PRC)
+- ✅ Improved toast notification system
+- ✅ Enhanced UI with progress tracking
+- ✅ Treasury integration for admin revenue
+
+## 🎯 Future Features
+
+- [ ] Multiplayer functionality
+- [ ] More land regions
+- [ ] Advanced trading system
+- [ ] Guild/Alliance features
+- [ ] Mobile app version
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 🤝 Contributing
+
+Feel free to submit issues, feature requests, or pull requests to improve the game!
+
+---
+
+**Built with ❤️ by RevEmpire** 
