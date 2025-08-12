@@ -214,8 +214,8 @@ class EmpireClickGame {
         this.initializeExpiredPlots();
         this.updateTakeoverDisplay();
         
-        // Background music handled by revempire.bgm.patch.js
-        // this.initBackgroundMusic();
+        // Background music system
+        this.initBackgroundMusic();
         
         // Sprite textures preloaded by rescue patch
         
