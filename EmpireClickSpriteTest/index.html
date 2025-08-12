@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sprite Renderer Test</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .tile {
+      background: #111;
+      border: 1px solid #444;
+      padding: 5px;
+      border-radius: 5px;
+    }
+    .tile img {
+      width: 100%;
+      height: auto;
+      border-radius: 5px;
+    }
+    .rarity {
+      margin-top: 5px;
+      font-size: 0.8rem;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>EmpireClick Sprite Renderer Test</h1>
+  <div class="grid" id="spriteGrid"></div>
+
+  <script>
+    const rarities = ["Common", "Rare", "Epic", "Legendary"];
+    const grid = document.getElementById("spriteGrid");
+
+    for (let i = 0; i < 20; i++) {
+      const rarity = rarities[Math.floor(Math.random() * rarities.length)];
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      tile.innerHTML = `
+        <img src="./assets/images/Castles/castlekeep_04.png" alt="${rarity}">
+        <div class="rarity">${rarity}</div>
+      `;
+      grid.appendChild(tile);
+    }
+  </script>
+</body>
+</html>

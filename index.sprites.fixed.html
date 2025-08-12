@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmpireClick</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- Core game scripts -->
+  <script src="game.js"></script>
+  <script src="ui.js"></script>
+  
+  <!-- Simple PNG sprite renderer -->
+  <script src="sprites.js"></script>
+
+  <script>
+    // Example: Hook the sprite renderer into the game's claim plot logic
+    // Ensure this matches your existing call site for renderModelOnPlot
+    window.renderModelOnPlot = function(plotElement, rarity) {
+      const spriteMap = {
+        "Common": "assets/images/Castles/common_cottage.png",
+        "Rare": "assets/images/Castles/rare_fortress.png",
+        "Epic": "assets/images/Castles/epic_castle.png",
+        "Legendary": "assets/images/Castles/legendary_large_castle.png",
+        "Elite": "assets/images/Castles/elite_colosseum.png"
+      };
+      const src = spriteMap[rarity] || spriteMap["Common"];
+      let img = plotElement.querySelector("img.plot-sprite");
+      if (!img) {
+        img = document.createElement("img");
+        img.className = "plot-sprite";
+        plotElement.appendChild(img);
+      }
+      img.src = src;
+    };
+  </script>
+</body>
+</html>
