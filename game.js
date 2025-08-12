@@ -3391,6 +3391,11 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
 
     // PRC Store is now handled by createPRCStore() in the main init
     this.updateEventDisplay();
+    
+    // Force start a test event after 5 seconds to demonstrate the system
+    setTimeout(() => {
+        this.forceEvent('Lucky Surge');
+    }, 5000);
   };
 
   // ---------- Events UI ----------
