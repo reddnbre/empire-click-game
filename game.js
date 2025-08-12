@@ -146,7 +146,7 @@ class EmpireClickGame {
         this.offlineEarnings = 0;
         this.isOffline = false;
         this.offlineStartTime = null;
-        this.offlineThreshold = 5 * 60 * 1000;
+        this.offlineThreshold = 30 * 1000; // 30 seconds for testing
         
         // Achievement System
         this.achievementPoints = 0;
@@ -1238,6 +1238,7 @@ class EmpireClickGame {
     }
     
     createMusicControls() {
+        console.log('🎵 Creating music controls...');
         // Create music control panel
         const musicPanel = document.createElement('div');
         musicPanel.id = 'musicControls';
@@ -1245,13 +1246,15 @@ class EmpireClickGame {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             padding: 15px;
             border-radius: 10px;
             color: white;
             font-family: Arial, sans-serif;
-            z-index: 1000;
+            z-index: 9999;
             min-width: 200px;
+            border: 2px solid #ffd700;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         `;
         
         musicPanel.innerHTML = `
@@ -1278,6 +1281,7 @@ class EmpireClickGame {
         `;
         
         document.body.appendChild(musicPanel);
+        console.log('🎵 Music controls added to DOM');
         
         // Add event listeners
         document.getElementById('musicToggle').addEventListener('click', () => this.toggleMusic());
@@ -1285,6 +1289,7 @@ class EmpireClickGame {
         
         // Make panel draggable
         this.makeDraggable(musicPanel);
+        console.log('🎵 Music controls setup complete');
     }
     
     toggleMusic() {
@@ -2273,6 +2278,15 @@ Earnings/sec: ${this.earningsPerSecond}
         const now = Date.now();
         const timeSinceActive = now - this.lastActiveTime;
         
+        // Debug logging
+        console.log('🔄 Offline check:', {
+            timeSinceActive: Math.floor(timeSinceActive / 1000) + 's',
+            threshold: Math.floor(this.offlineThreshold / 1000) + 's',
+            isOffline: this.isOffline,
+            shouldStart: timeSinceActive >= this.offlineThreshold && !this.isOffline,
+            shouldEnd: this.isOffline && timeSinceActive < this.offlineThreshold
+        });
+        
         if (timeSinceActive >= this.offlineThreshold && !this.isOffline) {
             this.startOfflineEarnings();
         }
@@ -2460,6 +2474,13 @@ Earnings/sec: ${this.earningsPerSecond}
         }
     }
     claimOfflineEarnings() {}
+    
+    // Test function for offline earnings
+    testOfflineEarnings() {
+        console.log('🧪 Testing offline earnings...');
+        this.lastActiveTime = Date.now() - (60 * 1000); // Set last active to 1 minute ago
+        this.checkOfflineEarnings();
+    }
 
     updateActivity() {
         this.lastActiveTime = Date.now();
