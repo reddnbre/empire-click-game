@@ -1,7 +1,140 @@
+/* ========= EmpireClick UI Polish Pack ========= */
+
+:root{
+  --ui-bg: 12 12 16;
+  --ui-card: 22 22 28;
+  --ui-accent: 255 184 77;   /* gold */
+  --ui-accent-2: 93 156 236; /* royal blue */
+  --ui-text: 240 240 248;
+  --ui-muted: 170 170 182;
+
+  --glass-bg: rgba(20,20,28,0.6);
+  --glass-border: rgba(255,255,255,0.08);
+  --glow: 0 8px 24px rgba(0,0,0,0.55);
+
+  --z-base: 10;
+  --z-tooltip: 900;
+  --z-toast: 1200;
+  --z-modal: 1400;
+  --z-message: 1500;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+.ec-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glow);
+  backdrop-filter: blur(10px);
+}
+
+.ec-title {
+  font-weight: 700;
+  letter-spacing: .3px;
+  color: rgb(var(--ui-text));
+}
+
+/* Plot Info Panel (uses existing #plotInfoPanel) */
+.plot-info-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: var(--z-message);
+  display: none;
+  min-width: 260px;
+  padding: 14px 16px;
+  color: rgb(var(--ui-text));
+  border-left: 3px solid rgb(var(--ui-accent));
+}
+.plot-info-panel.ec-glass .label { color: rgba(var(--ui-text), .8); font-size: .85rem; }
+.plot-info-panel.ec-glass .value { font-weight: 600; }
+.plot-info-panel .row { display: grid; grid-template-columns: 90px 1fr; gap: 6px; margin: 4px 0; }
+.plot-info-panel .tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px; border-radius: 999px;
+  background: rgba(var(--ui-accent), .12);
+  border: 1px solid rgba(var(--ui-accent), .35);
+  color: rgb(var(--ui-text));
+  font-size: .8rem;
+}
+
+/* Modal polish (uses existing .modal containers) */
+.modal {
+  position: fixed; inset: 0; display: none; z-index: var(--z-modal);
+  align-items: center; justify-content: center;
+}
+.modal.is-open { display: flex; }
+.modal::before {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(3px);
+}
+.modal .modal-content {
+  position: relative; z-index: 1; width: min(720px, 92vw);
+  padding: 18px;
+  animation: ecPop .18s ease-out;
+}
+.modal .modal-content.ec-glass { border-top: 1px solid rgba(255,255,255,.06); }
+
+@keyframes ecPop {
+  from { transform: translateY(8px) scale(.98); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Game Message (uses existing #gameMessage) */
+#gameMessage {
+  position: fixed; left: 50%; top: 6%;
+  transform: translateX(-50%);
+  z-index: var(--z-message);
+  display: none;
+  padding: 16px 22px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(32,32,38,.9), rgba(20,20,26,.9));
+  color: rgb(var(--ui-text));
+  box-shadow: 0 16px 38px rgba(0,0,0,.45);
+}
+
+/* Toasts */
+.ec-toast-container {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex; flex-direction: column; gap: 10px; align-items: center;
+}
+.ec-toast {
+  min-width: 260px; max-width: 520px;
+  padding: 10px 14px; border-radius: 10px;
+  background: rgba(20,20,28,.85);
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgb(var(--ui-text));
+  box-shadow: var(--glow);
+  animation: toastIn .2s ease-out;
+}
+.ec-toast.success { border-left: 3px solid #22c55e; }
+.ec-toast.error   { border-left: 3px solid #ef4444; }
+.ec-toast.info    { border-left: 3px solid rgb(var(--ui-accent-2)); }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Tooltips (optional helper class) */
+.ec-tip {
+  position: absolute; z-index: var(--z-tooltip);
+  padding: 6px 8px; border-radius: 8px;
+  background: rgba(0,0,0,.85); color: #fff; font-size: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 18px rgba(0,0,0,.45);
+}
+
+/* Motion respect */
+@media (prefers-reduced-motion: reduce){
+  * { animation: none !important; transition: none !important; }
 }
 
 body {
@@ -9,6 +142,181 @@ body {
     min-height: 100vh;
     overflow: hidden;
     font-family: 'Arial', sans-serif;
+    /* Mobile landscape enforcement */
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+}
+
+/* Overlay styles for all devices */
+.overlay-panel {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #ffd700;
+    border-radius: 10px;
+    padding: 10px;
+    color: white;
+    font-size: 12px;
+    max-width: 250px;
+    min-width: 180px;
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+}
+
+.minimize-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    color: #ffd700;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+.minimize-btn:hover {
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.minimized {
+    width: auto !important;
+    height: auto !important;
+    overflow: hidden;
+}
+
+.minimized .overlay-content {
+    display: none;
+}
+
+/* Mobile orientation warning */
+.mobile-orientation-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    color: white;
+    text-align: center;
+}
+
+.orientation-content {
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    border: 2px solid #ffd700;
+}
+
+.orientation-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.orientation-arrow {
+    font-size: 36px;
+    margin-top: 15px;
+    animation: rotate 2s infinite linear;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile landscape enforcement */
+@media screen and (max-width: 768px) {
+    body {
+        /* Force landscape orientation */
+        transform: rotate(90deg);
+        transform-origin: center center;
+        width: 100vh;
+        height: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+    
+    .game-container {
+        width: 100vh;
+        height: 100vw;
+        transform: rotate(-90deg);
+        transform-origin: center center;
+    }
+    
+    .world {
+        width: 100vh;
+        height: 100vw;
+    }
+    
+    /* Adjust plot sizes for mobile */
+    .plot {
+        min-width: 20px;
+        min-height: 20px;
+    }
+    
+    /* Make panels more mobile-friendly */
+    .panel {
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow-y: auto;
+        font-size: 14px;
+    }
+    
+    /* Ensure overlays are draggable and visible */
+    .draggable {
+        touch-action: none;
+        user-select: none;
+    }
+    
+    /* Mobile-friendly overlay positioning */
+    .overlay-panel {
+        position: fixed;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.9);
+        border: 2px solid #ffd700;
+        border-radius: 10px;
+        padding: 10px;
+        color: white;
+        font-size: 12px;
+        max-width: 200px;
+        min-width: 150px;
+    }
+    
+    /* Minimize button for overlays */
+    .minimize-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: none;
+        border: none;
+        color: #ffd700;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 2px 5px;
+        border-radius: 3px;
+    }
+    
+    .minimize-btn:hover {
+        background: rgba(255, 215, 0, 0.2);
+    }
+    
+    /* Minimized state */
+    .minimized {
+        width: auto !important;
+        height: auto !important;
+        overflow: hidden;
+    }
+    
+    .minimized .overlay-content {
+        display: none;
+    }
 }
 
 .game-container {
@@ -817,103 +1125,9 @@ button:hover {
     opacity: 0.9;
 }
 
-/* Admin Backoffice Panel */
-.admin-backoffice-section {
-    background: linear-gradient(135deg, #8E44AD, #9B59B6);
-    border: 2px solid #E74C3C;
-    color: white;
-}
+/* Admin styles moved to separate admin.html page */
 
-.admin-section {
-    margin: 15px 0;
-    padding: 10px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 5px;
-}
-
-.admin-section h4 {
-    margin: 0 0 10px 0;
-    color: #F39C12;
-    font-size: 14px;
-}
-
-.admin-btn {
-    background: linear-gradient(145deg, #3498DB, #2980B9);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    margin: 3px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-    transition: all 0.2s ease;
-}
-
-.admin-btn:hover {
-    background: linear-gradient(145deg, #5DADE2, #3498DB);
-    transform: translateY(-1px);
-}
-
-.admin-btn.delete-btn {
-    background: linear-gradient(145deg, #E74C3C, #C0392B);
-}
-
-.admin-btn.delete-btn:hover {
-    background: linear-gradient(145deg, #EC7063, #E74C3C);
-}
-
-.debug-info {
-    background: rgba(0,0,0,0.3);
-    padding: 8px;
-    margin-top: 8px;
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: 11px;
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-/* Region Management Panel */
-.region-management-section {
-    background: linear-gradient(135deg, #2C3E50, #34495E);
-    border: 2px solid #3498DB;
-}
-
-.create-region-btn {
-    background: linear-gradient(145deg, #E67E22, #D35400);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    margin: 10px 0;
-    width: 100%;
-    transition: all 0.3s ease;
-}
-
-.create-region-btn:hover {
-    background: linear-gradient(145deg, #F39C12, #E67E22);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-.regions-list {
-    margin-top: 10px;
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-.region-item {
-    background: rgba(52, 73, 94, 0.7);
-    padding: 8px 12px;
-    margin: 5px 0;
-    border-radius: 5px;
-    cursor: pointer;
-    border-left: 4px solid #3498DB;
-    transition: all 0.2s ease;
-}
+/* Region management styles moved to admin panel */
 
 .region-item:hover {
     background: rgba(52, 73, 94, 0.9);

@@ -182,6 +182,9 @@ class EmpireClickGame {
     init() {
         console.log('Game initialization started...');
         
+        // Check mobile orientation
+        this.checkMobileOrientation();
+        
         // Three.js scene removed - using simple DOM images now
         
         this.createWorld();
@@ -201,18 +204,19 @@ class EmpireClickGame {
         this.startKingsDrawCountdown();
         this.updateRegionUI();
         this.updateFindsUI();
+        this.updateFindsAvailableDisplay(); // Initialize finds available display
         this.updateBoostUI();
         this.updateDrawsUI();
         this.updateCurrencyDisplay();
         this.updateRegionDisplay();
-        this.createRegionManagementPanel();
-        this.createAdminBackoffice();
+        // Region management moved to admin panel
         this.updateGlobalPlotCount();
         this.updateEarningsDisplay();
         this.updateLoginUI();
         this.checkAchievements();
         this.initializeExpiredPlots();
         this.updateTakeoverDisplay();
+        this.updateEventDisplay(); // Initialize event display
         
         // Background music system
         this.initBackgroundMusic();
@@ -253,7 +257,14 @@ class EmpireClickGame {
         }, 1000);
         
         // Event timer interval - now handled by new patch system
-        // setInterval(() => this.handleEventTimers(), 1000);
+        setInterval(() => this.handleEventTimers(), 1000);
+        
+        // Start an event immediately when game loads (so players see events right away)
+        setTimeout(() => {
+            if (!this.activeEvent) {
+                this.startRandomEvent();
+            }
+        }, 5000); // Start first event after 5 seconds
         
         // Start earnings interval
         setInterval(() => {
@@ -261,6 +272,9 @@ class EmpireClickGame {
         }, 1000);
         
         console.log('Game initialization completed!');
+        
+        // Initialize economy monitoring for admin panel
+        this.initAdminEconomyMonitoring();
     }
     
     // Three.js scene initialization removed - using simple DOM images now
@@ -380,9 +394,15 @@ class EmpireClickGame {
     }
     
     hidePlotInfoPanel() {
-        const plotInfoPanel = document.getElementById("plotInfoPanel");
-        if (plotInfoPanel) {
-            plotInfoPanel.style.display = "none";
+        // Use the new polished plot info system
+        if (typeof window.hidePlotInfo === 'function') {
+            window.hidePlotInfo();
+        } else {
+            // Fallback to old system
+            const plotInfoPanel = document.getElementById("plotInfoPanel");
+            if (plotInfoPanel) {
+                plotInfoPanel.style.display = "none";
+            }
         }
     }
     
@@ -394,18 +414,28 @@ class EmpireClickGame {
         if (plot.claimed) {
             // Show plot info panel for claimed plots
             const plotName = plot.name || this.generatePlotName();
-            const plotNameLabel = document.getElementById("plotNameLabel");
-            const plotOwnerLabel = document.getElementById("plotOwnerLabel");
-            const plotRarityLabel = document.getElementById("plotRarityLabel");
-            const plotInfoPanel = document.getElementById("plotInfoPanel");
-            
-            if (plotNameLabel) plotNameLabel.textContent = plotName;
-            if (plotOwnerLabel) plotOwnerLabel.textContent = plot.owner;
-            if (plotRarityLabel) {
-                plotRarityLabel.textContent = plot.rarity;
-                plotRarityLabel.style.color = this.getRarityColor(plot.rarity);
+            // Use the new polished plot info system
+            if (typeof window.showPlotInfo === 'function') {
+                window.showPlotInfo({
+                    name: plotName,
+                    owner: plot.owner,
+                    rarity: plot.rarity
+                });
+            } else {
+                // Fallback to old system
+                const plotNameLabel = document.getElementById("plotNameLabel");
+                const plotOwnerLabel = document.getElementById("plotOwnerLabel");
+                const plotRarityLabel = document.getElementById("plotRarityLabel");
+                const plotInfoPanel = document.getElementById("plotInfoPanel");
+                
+                if (plotNameLabel) plotNameLabel.textContent = plotName;
+                if (plotOwnerLabel) plotOwnerLabel.textContent = plot.owner;
+                if (plotRarityLabel) {
+                    plotRarityLabel.textContent = plot.rarity;
+                    plotRarityLabel.style.color = this.getRarityColor(plot.rarity);
+                }
+                if (plotInfoPanel) plotInfoPanel.style.display = "block";
             }
-            if (plotInfoPanel) plotInfoPanel.style.display = "block";
             
             if (plot.owner === this.playerName) {
                 this.showExplorationModal(plot);
@@ -850,6 +880,13 @@ class EmpireClickGame {
             multiplier *= 2.0;
         }
         
+        // Apply event multipliers
+        if (this.activeEvent === 'Lucky Surge') {
+            multiplier *= 1.5; // +50% earnings from all plots
+        } else if (this.activeEvent === 'Kings Festival') {
+            multiplier *= 2.0; // 2x earnings on all plots
+        }
+        
         this.baseEarningsPerSecond = totalEarnings;
         this.earningsPerSecond = this.baseEarningsPerSecond * multiplier;
         
@@ -861,6 +898,7 @@ class EmpireClickGame {
         this.withdrawalBalance += this.earningsPerSecond;
         
         this.updateEarningsDisplay();
+        this.updateEventDisplay(); // Update event display when earnings change
     }
     
     boostEarnings() {
@@ -1242,40 +1280,35 @@ class EmpireClickGame {
         // Create music control panel
         const musicPanel = document.createElement('div');
         musicPanel.id = 'musicControls';
+        musicPanel.className = 'overlay-panel ec-glass';
         musicPanel.style.cssText = `
-            position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-            font-family: Arial, sans-serif;
-            z-index: 9999;
             min-width: 200px;
-            border: 2px solid #ffd700;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
         `;
         
         musicPanel.innerHTML = `
-            <div style="margin-bottom: 10px; font-weight: bold; color: #ffd700;">🎵 Music Controls</div>
-            <div style="margin-bottom: 10px;">
-                <button id="musicToggle" style="
-                    background: ${this.musicEnabled ? '#4CAF50' : '#f44336'};
-                    color: white;
-                    border: none;
-                    padding: 8px 12px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    margin-right: 10px;
-                ">${this.musicEnabled ? '🔊 On' : '🔇 Off'}</button>
-                <span id="musicStatus" style="font-size: 12px;">${this.musicEnabled ? 'Playing' : 'Stopped'}</span>
-            </div>
-            <div style="margin-bottom: 10px;">
-                <label style="font-size: 12px; display: block; margin-bottom: 5px;">Volume:</label>
-                <input type="range" id="musicVolume" min="0" max="100" value="${this.musicVolume * 100}" style="width: 100%;">
-                <div style="font-size: 10px; text-align: center; margin-top: 2px;">
-                    <span id="volumeDisplay">${Math.round(this.musicVolume * 100)}%</span>
+            <button class="minimize-btn" id="musicMinimize">−</button>
+            <div class="overlay-content">
+                <div style="margin-bottom: 10px; font-weight: bold; color: #ffd700;">🎵 Music Controls</div>
+                <div style="margin-bottom: 10px;">
+                    <button id="musicToggle" style="
+                        background: ${this.musicEnabled ? '#4CAF50' : '#f44336'};
+                        color: white;
+                        border: none;
+                        padding: 8px 12px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        margin-right: 10px;
+                    ">${this.musicEnabled ? '🔊 On' : '🔇 Off'}</button>
+                    <span id="musicStatus" style="font-size: 12px;">${this.musicEnabled ? 'Playing' : 'Stopped'}</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-size: 12px; display: block; margin-bottom: 5px;">Volume:</label>
+                    <input type="range" id="musicVolume" min="0" max="100" value="${this.musicVolume * 100}" style="width: 100%;">
+                    <div style="font-size: 10px; text-align: center; margin-top: 2px;">
+                        <span id="volumeDisplay">${Math.round(this.musicVolume * 100)}%</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -1286,6 +1319,9 @@ class EmpireClickGame {
         // Add event listeners
         document.getElementById('musicToggle').addEventListener('click', () => this.toggleMusic());
         document.getElementById('musicVolume').addEventListener('input', (e) => this.setMusicVolume(e.target.value / 100));
+        
+        // Add minimize functionality
+        document.getElementById('musicMinimize').addEventListener('click', () => this.toggleMusicMinimize());
         
         // Make panel draggable
         this.makeDraggable(musicPanel);
@@ -1519,49 +1555,7 @@ class EmpireClickGame {
         console.log(`Toggled to ${this.currentRegion} region`);
     }
     
-    createNewRegion() {
-        console.log('createNewRegion called');
-        
-        // Prompt for region name
-        const regionName = prompt("Enter name for new region:");
-        if (!regionName || regionName.trim() === "") {
-            console.log('Region creation cancelled - no name provided');
-            return;
-        }
-        
-        const cleanRegionName = regionName.trim();
-        
-        // Check if region already exists
-        if (this.regions.includes(cleanRegionName)) {
-            alert(`Region "${cleanRegionName}" already exists!`);
-            return;
-        }
-        
-        console.log(`Creating new region: ${cleanRegionName}`);
-        
-        // Add new region to arrays
-        this.regions.push(cleanRegionName);
-        this.regionsOwned++;
-        
-        // Initialize region data - only plots are separate, everything else is global
-        this.regionData[cleanRegionName] = {
-            plots: []  // Each region has its own 500 plots, but shares global stats
-        };
-        
-        // Create the complete world for this region (500 plots)
-        this.createRegionWorld(cleanRegionName);
-        
-        console.log(`New region "${cleanRegionName}" created with ${this.regionData[cleanRegionName].plots.length} plots`);
-        console.log('All regions:', this.regions);
-        
-        // Update UI
-        this.updateRegionManagementDisplay();
-        
-        // Switch to new region to show it
-        this.switchToRegion(cleanRegionName);
-        
-        alert(`Region "${cleanRegionName}" created successfully with 500 new plots!`);
-    }
+    // createNewRegion function moved to admin panel
     
     switchToRegion(regionName) {
         console.log(`Switching to region: ${regionName}`);
@@ -1621,343 +1615,11 @@ class EmpireClickGame {
         console.log(`Global plot count updated: ${totalClaimed} claimed out of ${totalPlots} total plots across ${this.regions.length} regions`);
     }
     
-    createAdminBackoffice() {
-        if (!this.isAdmin) {
-            console.log('Admin backoffice skipped - user is not admin');
-            return;
-        }
-        
-        console.log('createAdminBackoffice called');
-        
-        // Find the game panels container
-        const gamePanels = document.querySelector('.game-panels');
-        if (!gamePanels) {
-            console.error('Game panels container not found');
-            return;
-        }
-        
-        // Check if panel already exists
-        if (document.querySelector('.admin-backoffice-section')) {
-            console.log('Admin backoffice panel already exists');
-            return;
-        }
-        
-        // Create the admin backoffice panel
-        const panel = document.createElement('div');
-        panel.className = 'panel admin-backoffice-section';
-        
-        panel.innerHTML = `
-            <h3>🔧 Admin Backoffice</h3>
-            <div class="admin-section">
-                <h4>🗺️ Region Management</h4>
-                <button onclick="game.adminCreateRegion()" class="admin-btn">➕ Create Test Region</button>
-                <button onclick="game.adminDeleteRegion()" class="admin-btn delete-btn">🗑️ Delete Region</button>
-                <button onclick="game.adminListRegions()" class="admin-btn">📋 List All Regions</button>
-            </div>
-            <div class="admin-section">
-                <h4>💰 Currency Management</h4>
-                <button onclick="game.adminAddCoins(1000)" class="admin-btn">💰 +1000 RevCoins</button>
-                <button onclick="game.adminAddPremium(100)" class="admin-btn">💎 +100 Premium</button>
-                <button onclick="game.adminResetCurrency()" class="admin-btn delete-btn">🔄 Reset Currency</button>
-            </div>
-            <div class="admin-section">
-                <h4>🏗️ Plot Management</h4>
-                <button onclick="game.adminClaimRandomPlots(5)" class="admin-btn">🎲 Claim 5 Random Plots</button>
-                <button onclick="game.adminResetAllPlots()" class="admin-btn delete-btn">🧹 Reset All Plots</button>
-            </div>
-            <div class="admin-section">
-                <h4>📊 Debug Info</h4>
-                <button onclick="game.adminShowDebugInfo()" class="admin-btn">🐛 Show Debug Info</button>
-                <div id="adminDebugInfo" class="debug-info"></div>
-            </div>
-        `;
-        
-        // Insert before achievements panel
-        const achievementsPanel = document.querySelector('.achievements-section');
-        if (achievementsPanel) {
-            gamePanels.insertBefore(panel, achievementsPanel);
-        } else {
-            gamePanels.appendChild(panel);
-        }
-        
-        console.log('Admin backoffice panel created');
-    }
+    // Admin controls moved to separate admin.html page
     
-    // Admin Functions
-    adminCreateRegion() {
-        console.log('Admin: Creating test region');
-        const testNames = ['North', 'South', 'East', 'West', 'Central', 'Highlands', 'Lowlands', 'Coastal'];
-        const availableNames = testNames.filter(name => !this.regions.includes(name));
-        
-        if (availableNames.length === 0) {
-            alert('All test regions already exist!');
-            return;
-        }
-        
-        const regionName = availableNames[0];
-        
-        // Add new region to arrays
-        this.regions.push(regionName);
-        this.regionsOwned++;
-        
-        // Initialize region data
-        this.regionData[regionName] = {
-            plots: []
-        };
-        
-        // Create the complete world for this region
-        this.createRegionWorld(regionName);
-        
-        console.log(`Admin: Created test region "${regionName}" with ${this.regionData[regionName].plots.length} plots`);
-        
-        // Update UI
-        this.updateRegionManagementDisplay();
-        
-        alert(`Test region "${regionName}" created with 500 plots!`);
-    }
+
     
-    adminDeleteRegion() {
-        if (this.regions.length <= 1) {
-            alert('Cannot delete the last region!');
-            return;
-        }
-        
-        const regionToDelete = prompt(`Enter region name to delete (available: ${this.regions.filter(r => r !== 'Default').join(', ')}):`);
-        
-        if (!regionToDelete || regionToDelete === 'Default') {
-            alert('Cannot delete Default region or invalid region name!');
-            return;
-        }
-        
-        if (!this.regions.includes(regionToDelete)) {
-            alert(`Region "${regionToDelete}" does not exist!`);
-            return;
-        }
-        
-        // Remove from arrays
-        this.regions = this.regions.filter(r => r !== regionToDelete);
-        delete this.regionData[regionToDelete];
-        this.regionsOwned--;
-        
-        // If we were in the deleted region, switch to Default
-        if (this.currentRegion === regionToDelete) {
-            this.switchToRegion('Default');
-        }
-        
-        this.updateRegionManagementDisplay();
-        this.updateGlobalPlotCount();
-        
-        console.log(`Admin: Deleted region "${regionToDelete}"`);
-        alert(`Region "${regionToDelete}" deleted!`);
-    }
-    
-    adminListRegions() {
-        const regionInfo = this.regions.map(regionName => {
-            const plotCount = this.regionData[regionName] ? this.regionData[regionName].plots.length : 0;
-            const claimedCount = this.regionData[regionName] ? 
-                this.regionData[regionName].plots.filter(p => p.claimed).length : 0;
-            return `${regionName}: ${plotCount} plots (${claimedCount} claimed)`;
-        }).join('\n');
-        
-        alert(`All Regions:\n${regionInfo}`);
-    }
-    
-    adminAddCoins(amount) {
-        this.revCoins += amount;
-        this.updateCurrencyDisplay();
-        console.log(`Admin: Added ${amount} RevCoins`);
-    }
-    
-    adminAddPremium(amount) {
-        this.premiumCoins += amount;
-        this.updateCurrencyDisplay();
-        console.log(`Admin: Added ${amount} Premium RevCoins`);
-    }
-    
-    adminResetCurrency() {
-        this.revCoins = 1000;
-        this.premiumCoins = 50;
-        this.premiumRevCoins = 0;
-        this.earnings = 0;
-        this.withdrawalBalance = 0;
-        this.updateCurrencyDisplay();
-        this.updateEarningsDisplay();
-        console.log('Admin: Currency reset to defaults');
-    }
-    
-    adminClaimRandomPlots(count) {
-        const availablePlots = this.plots.filter(plot => !plot.claimed);
-        if (availablePlots.length === 0) {
-            alert('No available plots to claim in current region!');
-            return;
-        }
-        
-        const actualCount = Math.min(count, availablePlots.length);
-        const rarities = ['Common', 'Rare', 'Epic', 'Legendary', 'Elite'];
-        
-        for (let i = 0; i < actualCount; i++) {
-            const randomPlot = availablePlots[Math.floor(Math.random() * availablePlots.length)];
-            const randomRarity = rarities[Math.floor(Math.random() * rarities.length)];
-            
-            // Claim the plot
-            randomPlot.claimed = true;
-            randomPlot.owner = this.playerName;
-            randomPlot.rarity = randomRarity;
-            randomPlot.element.classList.add('claimed', randomRarity);
-            
-            // Add earnings
-            this.earnings += this.rarityRates[randomRarity];
-            
-            // Add sprite
-            window.renderModelOnPlot(randomPlot.element, randomRarity);
-            
-            // Remove from available list
-            availablePlots.splice(availablePlots.indexOf(randomPlot), 1);
-        }
-        
-        this.updateGlobalPlotCount();
-        this.updateEarningsDisplay();
-        console.log(`Admin: Claimed ${actualCount} random plots`);
-        alert(`Claimed ${actualCount} random plots!`);
-    }
-    
-    adminResetAllPlots() {
-        if (!confirm('This will reset ALL plots in ALL regions. Are you sure?')) {
-            return;
-        }
-        
-        this.regions.forEach(regionName => {
-            if (this.regionData[regionName] && this.regionData[regionName].plots) {
-                this.regionData[regionName].plots.forEach(plot => {
-                    plot.claimed = false;
-                    plot.owner = "";
-                    plot.rarity = null;
-                    plot.element.className = 'plot'; // Reset classes
-                    plot.element.innerHTML = plot.element.querySelector('.plot-tooltip') ? 
-                        plot.element.querySelector('.plot-tooltip').outerHTML : '';
-                });
-            }
-        });
-        
-        this.plotsClaimed = 0;
-        this.earnings = 0;
-        this.updateGlobalPlotCount();
-        this.updateEarningsDisplay();
-        console.log('Admin: Reset all plots in all regions');
-        alert('All plots in all regions have been reset!');
-    }
-    
-    adminShowDebugInfo() {
-        const debugInfo = document.getElementById('adminDebugInfo');
-        if (!debugInfo) return;
-        
-        const info = `
-Current Region: ${this.currentRegion}
-Total Regions: ${this.regions.length}
-Regions: ${this.regions.join(', ')}
-Total Plots Claimed: ${this.plotsClaimed}
-Current Region Plots: ${this.plots.length}
-RevCoins: ${this.revCoins}
-Premium RevCoins: ${this.premiumCoins}
-Earnings: ${this.earnings}
-Earnings/sec: ${this.earningsPerSecond}
-        `.trim();
-        
-        debugInfo.textContent = info;
-        console.log('Admin Debug Info:', info);
-    }
-    
-    createRegionManagementPanel() {
-        console.log('createRegionManagementPanel called');
-        
-        // Find the game panels container
-        const gamePanels = document.querySelector('.game-panels');
-        if (!gamePanels) {
-            console.error('Game panels container not found');
-            return;
-        }
-        
-        // Check if panel already exists
-        if (document.querySelector('.region-management-section')) {
-            console.log('Region management panel already exists, updating instead');
-            this.updateRegionManagementDisplay();
-            return;
-        }
-        
-        // Create the region management panel
-        const panel = document.createElement('div');
-        panel.className = 'panel region-management-section';
-        
-        panel.innerHTML = `
-            <h3>🗺️ Region Management</h3>
-            <div>Current Region: <span id="currentRegionManagementDisplay">${this.currentRegion}</span></div>
-            <div>Regions Owned: <span id="regionsOwnedDisplay">${this.regionsOwned}</span></div>
-            <div>Total Plots Claimed: <span id="totalPlotsClaimedDisplay">${this.plotsClaimed}</span></div>
-            <button onclick="game.createNewRegion()" class="create-region-btn">🏗️ Create New Region</button>
-            <div class="regions-list" id="regionsList"></div>
-        `;
-        
-        // Insert before achievements panel
-        const achievementsPanel = document.querySelector('.achievements-section');
-        if (achievementsPanel) {
-            gamePanels.insertBefore(panel, achievementsPanel);
-        } else {
-            gamePanels.appendChild(panel);
-        }
-        
-        console.log('Region management panel created');
-        
-        // Initialize the regions list
-        this.updateRegionManagementDisplay();
-    }
-    
-    updateRegionManagementDisplay() {
-        console.log('updateRegionManagementDisplay called');
-        
-        // Update current region display
-        const currentRegionDisplay = document.getElementById('currentRegionManagementDisplay');
-        if (currentRegionDisplay) {
-            currentRegionDisplay.textContent = this.currentRegion;
-        }
-        
-        // Update regions owned count
-        const regionsOwnedDisplay = document.getElementById('regionsOwnedDisplay');
-        if (regionsOwnedDisplay) {
-            regionsOwnedDisplay.textContent = this.regionsOwned;
-        }
-        
-        // Update total plots claimed across all regions
-        const totalPlotsDisplay = document.getElementById('totalPlotsClaimedDisplay');
-        if (totalPlotsDisplay) {
-            totalPlotsDisplay.textContent = this.plotsClaimed;
-        }
-        
-        // Update regions list
-        const regionsList = document.getElementById('regionsList');
-        if (regionsList) {
-            regionsList.innerHTML = '';
-            
-            this.regions.forEach(region => {
-                const regionDiv = document.createElement('div');
-                regionDiv.className = 'region-item';
-                regionDiv.dataset.region = region;
-                regionDiv.textContent = region;
-                
-                // Mark current region as active
-                if (region === this.currentRegion) {
-                    regionDiv.classList.add('active');
-                }
-                
-                // Add click handler to switch regions
-                regionDiv.addEventListener('click', () => {
-                    this.switchToRegion(region);
-                    console.log(`Clicked to switch to region: ${region}`);
-                });
-                
-                regionsList.appendChild(regionDiv);
-            });
-        }
-    }
+    // Region management functions moved to admin panel
 
 // Rescue patch temporarily removed for debugging
     
@@ -2017,6 +1679,9 @@ Earnings/sec: ${this.earningsPerSecond}
         if (findsDisplay) {
             findsDisplay.textContent = this.finds;
         }
+        
+        // Also update the finds available display in the Find System panel
+        this.updateFindsAvailableDisplay();
     }
     updateBoostUI() {
         // Update boost display
@@ -2389,7 +2054,7 @@ Earnings/sec: ${this.earningsPerSecond}
 
     handleEventTimers() {
         // If no active event, randomly start one
-        if (!this.activeEvent && Math.random() < 0.001) { // 0.1% chance per second
+        if (!this.activeEvent && Math.random() < 0.01) { // 1% chance per second (much more frequent)
             this.startRandomEvent();
         }
         
@@ -2402,6 +2067,10 @@ Earnings/sec: ${this.earningsPerSecond}
                 this.endCurrentEvent();
             }
         }
+        
+        // Always update event display to ensure it's current
+        this.updateEventDisplay();
+        this.updateEventNotification(); // Update notification timer too
     }
     
     startRandomEvent() {
@@ -2410,9 +2079,18 @@ Earnings/sec: ${this.earningsPerSecond}
         this.eventTimer = this.eventDuration; // 4 hours (14400 seconds)
         
         console.log(`🎉 Event started: ${this.activeEvent}`);
-        alert(`🎉 Special Event: ${this.activeEvent}!\n\nThis event will last for 4 hours!`);
+        console.log(`⏰ Event duration: ${this.eventTimer} seconds (${this.eventTimer/3600} hours)`);
+        this._toast(`🎉 Special Event: ${this.activeEvent}! This event will last for 4 hours!`);
         
         this.updateEventDisplay();
+        this.showEventNotification(); // Show prominent event notification
+        
+        // Debug: Check if event display was updated
+        setTimeout(() => {
+            const eventNameEl = document.getElementById('currentEventDisplay');
+            console.log('Event display element:', eventNameEl);
+            console.log('Event display content:', eventNameEl ? eventNameEl.textContent : 'Element not found');
+        }, 100);
     }
     
     endCurrentEvent() {
@@ -2421,56 +2099,67 @@ Earnings/sec: ${this.earningsPerSecond}
         this.eventTimer = 0;
         
         console.log(`Event ended: ${endedEvent}`);
-        alert(`Event ended: ${endedEvent}`);
+        this._toast(`Event ended: ${endedEvent}`);
         
         this.updateEventDisplay();
+        this.hideEventNotification(); // Hide notification when event ends
     }
     
     updateEventDisplay() {
-        // Find or create event display element
-        let eventDisplay = document.getElementById('currentEventDisplay');
-        if (!eventDisplay) {
-            // Create event display if it doesn't exist
-            const eventPanel = document.querySelector('.event-panel') || document.body;
-            eventDisplay = document.createElement('div');
-            eventDisplay.id = 'currentEventDisplay';
-            eventDisplay.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: linear-gradient(45deg, #ff6b6b, #ff8e53);
-                color: white;
-                padding: 15px;
-                border-radius: 10px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                z-index: 1000;
-                font-weight: bold;
-                text-align: center;
-                min-width: 200px;
-                cursor: move;
-                user-select: none;
-            `;
-            eventPanel.appendChild(eventDisplay);
-            
-            // Make event display draggable
-            this.makeDraggable(eventDisplay);
-        }
+        // Update the HTML panel elements (clean, simple approach)
+        const eventNameEl = document.getElementById('currentEventDisplay');
+        const eventTimerEl = document.getElementById('eventTimerDisplay');
+        const eventEffectEl = document.getElementById('eventEffectDisplay');
         
         if (this.activeEvent) {
+            // Format time
             const hours = Math.floor(this.eventTimer / 3600);
             const minutes = Math.floor((this.eventTimer % 3600) / 60);
             const seconds = this.eventTimer % 60;
+            const timeString = `${hours}h ${minutes}m ${seconds}s`;
             
-            eventDisplay.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <div style="font-size: 18px;">🎉 ${this.activeEvent}</div>
-                    <button onclick="this.parentElement.parentElement.style.display='none'" style="background: none; border: none; color: white; font-size: 16px; cursor: pointer; padding: 0; margin: 0;">✕</button>
-                </div>
-                <div style="font-size: 14px;">Time left: ${hours}h ${minutes}m ${seconds}s</div>
-            `;
-            eventDisplay.style.display = 'block';
+            // Update displays
+            if (eventNameEl) eventNameEl.textContent = this.activeEvent;
+            if (eventTimerEl) eventTimerEl.textContent = timeString;
+            
+            // Set effect based on event type
+            let effect = 'No effect';
+            switch (this.activeEvent) {
+                case 'Lucky Surge':
+                    effect = '🎯 +50% earnings from all plots';
+                    break;
+                case 'Land Takeover Madness':
+                    effect = '⚔️ Takeover costs reduced by 50%';
+                    break;
+                case 'Audit Infraction':
+                    effect = '⚠️ Must clear by watching 3 ads or paying 125 PRC';
+                    break;
+                case 'Kings Festival':
+                    effect = '👑 Kings Draw entries give 2x rewards';
+                    break;
+            }
+            
+            // Handle audit infraction special case
+            if (this.auditFineActive) {
+                effect = '⚠️ Audit Infraction: Clear by 3 ads or pay 125 PRC\n\nYou\'ve been audited! You must either watch 3 ads or pay 125 PRC to clear this.';
+                if (this.outstandingFinePRC > 0) {
+                    effect += `\n\nOutstanding Fine: ${this.outstandingFinePRC} PRC`;
+                }
+            }
+            
+            if (eventEffectEl) eventEffectEl.textContent = effect;
+            
         } else {
-            eventDisplay.style.display = 'none';
+            // No active event
+            if (eventNameEl) eventNameEl.textContent = 'None';
+            if (eventTimerEl) eventTimerEl.textContent = '0h 0m 0s';
+            if (eventEffectEl) eventEffectEl.textContent = 'No effect';
+        }
+        
+        // Handle audit button visibility
+        const auditBtn = document.getElementById('auditButton');
+        if (auditBtn) {
+            auditBtn.style.display = this.auditFineActive ? 'inline-block' : 'none';
         }
     }
     claimOfflineEarnings() {}
@@ -2480,6 +2169,169 @@ Earnings/sec: ${this.earningsPerSecond}
         console.log('🧪 Testing offline earnings...');
         this.lastActiveTime = Date.now() - (60 * 1000); // Set last active to 1 minute ago
         this.checkOfflineEarnings();
+    }
+    
+    // Test function for events
+    testEvent() {
+        console.log('🎉 Testing event system...');
+        console.log('Current active event:', this.activeEvent);
+        console.log('Current event timer:', this.eventTimer);
+        console.log('Events list:', this.eventsList);
+        this.startRandomEvent();
+    }
+    
+    // Force start a specific event for testing
+    forceEvent(eventName) {
+        console.log(`🎉 Forcing event: ${eventName}`);
+        this.activeEvent = eventName;
+        this.eventTimer = 60; // 1 minute for testing
+        this.updateEventDisplay();
+        this.showEventNotification(); // Show notification for test events too
+        this._toast(`🧪 Test event: ${eventName} active for 1 minute!`);
+    }
+    
+    // Show event notification banner
+    showEventNotification() {
+        const notification = document.getElementById('eventNotification');
+        const eventNameEl = document.getElementById('eventNotificationName');
+        const eventTimerEl = document.getElementById('eventNotificationTimer');
+        
+        if (notification && this.activeEvent) {
+            // Set event name
+            if (eventNameEl) {
+                eventNameEl.textContent = this.activeEvent;
+            }
+            
+            // Set initial timer
+            if (eventTimerEl) {
+                const hours = Math.floor(this.eventTimer / 3600);
+                const minutes = Math.floor((this.eventTimer % 3600) / 60);
+                eventTimerEl.textContent = `${hours}h ${minutes}m remaining`;
+            }
+            
+            // Show notification
+            notification.style.display = 'block';
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                this.hideEventNotification();
+            }, 10000);
+        }
+    }
+    
+    // Hide event notification banner
+    hideEventNotification() {
+        const notification = document.getElementById('eventNotification');
+        if (notification) {
+            notification.style.display = 'none';
+        }
+    }
+    
+    // Update event notification timer
+    updateEventNotification() {
+        const eventTimerEl = document.getElementById('eventNotificationTimer');
+        if (eventTimerEl && this.activeEvent && this.eventTimer > 0) {
+            const hours = Math.floor(this.eventTimer / 3600);
+            const minutes = Math.floor((this.eventTimer % 3600) / 60);
+            const seconds = this.eventTimer % 60;
+            eventTimerEl.textContent = `${hours}h ${minutes}m ${seconds}s remaining`;
+        }
+    }
+    
+    // Show event notification again (for manual trigger)
+    showEventNotificationAgain() {
+        if (this.activeEvent) {
+            this.showEventNotification();
+            this._toast('📢 Event notification shown again!');
+        } else {
+            this._toast('No active event to show!');
+        }
+    }
+    
+    // Test function to verify event earnings integration
+    testEventEarnings() {
+        console.log('💰 Testing event earnings integration...');
+        console.log('Current earnings per second:', this.earningsPerSecond);
+        console.log('Active event:', this.activeEvent);
+        
+        // Start Lucky Surge to test earnings boost
+        this.activeEvent = 'Lucky Surge';
+        this.eventTimer = 60; // 1 minute for testing
+        this.updateEventDisplay();
+        
+        // Recalculate earnings to show the boost
+        this.startEarnings();
+        
+        console.log('New earnings per second (should be 1.5x):', this.earningsPerSecond);
+        this._toast('🧪 Event earnings test: Lucky Surge active for 1 minute!');
+    }
+    
+    // Watch Ad for Finds function
+    watchAdForFinds() {
+        // Simulate ad watching
+        this._toast('📺 Watching ad for finds...');
+        
+        setTimeout(() => {
+            // Reward player with 2 finds
+            this.finds = (this.finds || 0) + 2;
+            
+            // Update all find displays
+            this.updateFindsUI();
+            this.updateFindsAvailableDisplay();
+            
+            // Track ad watched for economy monitoring
+            this.trackAdWatched('finds_reward');
+            this.trackPlayerEngagement('watched_ad_for_finds');
+            
+            this._toast('✅ Ad completed! You earned +2 finds!');
+            console.log(`🎯 Finds updated: ${this.finds} available`);
+        }, 1000);
+    }
+    
+    // Update finds available display
+    updateFindsAvailableDisplay() {
+        const findsAvailableEl = document.getElementById('findsAvailableDisplay');
+        if (findsAvailableEl) {
+            findsAvailableEl.textContent = this.finds || 0;
+        }
+    }
+    
+    // Test function for Find System
+    testFindSystem() {
+        console.log('🔍 Testing Find System...');
+        console.log('Current finds:', this.finds);
+        
+        // Test watching ad for finds
+        this.watchAdForFinds();
+        
+        console.log('Find System test completed!');
+    }
+    
+    // Mobile orientation check
+    checkMobileOrientation() {
+        const warning = document.getElementById('mobileOrientationWarning');
+        if (!warning) return;
+        
+        const isMobile = window.innerWidth <= 768;
+        const isPortrait = window.innerHeight > window.innerWidth;
+        
+        if (isMobile && isPortrait) {
+            warning.style.display = 'flex';
+        } else {
+            warning.style.display = 'none';
+        }
+        
+        // Listen for orientation changes
+        window.addEventListener('resize', () => {
+            const isMobile = window.innerWidth <= 768;
+            const isPortrait = window.innerHeight > window.innerWidth;
+            
+            if (isMobile && isPortrait) {
+                warning.style.display = 'flex';
+            } else {
+                warning.style.display = 'none';
+            }
+        });
     }
 
     updateActivity() {
@@ -2496,6 +2348,10 @@ Earnings/sec: ${this.earningsPerSecond}
         if (!confirmed) return;
         
         alert("📺 Ad completed! Rolling for bonus...");
+        
+        // Track ad watched for economy monitoring
+        this.trackAdWatched('daily_login');
+        this.trackPlayerEngagement('watched_ad_for_daily_login');
         
         const roll = Math.random();
         let cumulativeChance = 0;
@@ -2741,7 +2597,7 @@ Earnings/sec: ${this.earningsPerSecond}
     this.updateKingsDrawDisplay();
   };
 
-  // Draggable system for UI widgets
+  // Draggable system for UI widgets (mobile-friendly)
   makeDraggable(element) {
     let isDragging = false;
     let currentX;
@@ -2751,14 +2607,23 @@ Earnings/sec: ${this.earningsPerSecond}
     let xOffset = 0;
     let yOffset = 0;
 
+    // Mouse events
     element.addEventListener('mousedown', dragStart);
     element.addEventListener('mousemove', drag);
     element.addEventListener('mouseup', dragEnd);
     element.addEventListener('mouseleave', dragEnd);
 
+    // Touch events for mobile
+    element.addEventListener('touchstart', dragStart, { passive: false });
+    element.addEventListener('touchmove', drag, { passive: false });
+    element.addEventListener('touchend', dragEnd);
+
     function dragStart(e) {
-      initialX = e.clientX - xOffset;
-      initialY = e.clientY - yOffset;
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      initialX = clientX - xOffset;
+      initialY = clientY - yOffset;
 
       if (e.target === element || element.contains(e.target)) {
         isDragging = true;
@@ -2769,8 +2634,11 @@ Earnings/sec: ${this.earningsPerSecond}
       if (isDragging) {
         e.preventDefault();
         
-        currentX = e.clientX - initialX;
-        currentY = e.clientY - initialY;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        currentX = clientX - initialX;
+        currentY = clientY - initialY;
 
         xOffset = currentX;
         yOffset = currentY;
@@ -2975,6 +2843,11 @@ Earnings/sec: ${this.earningsPerSecond}
       this.premiumRevCoins = (this.premiumRevCoins || 0) + amount;
       this.updatePRCStoreDisplay();
       this.updateCurrencyDisplay();
+      
+      // Track cash deposit for economy monitoring
+      this.trackCashDeposit(cost, 'USD');
+      this.trackPlayerEngagement('purchased_prc');
+      
       toast(this, `💰 Purchased ${amount} Premium RevCoins! (Simulated)`);
     }
   };
@@ -2986,6 +2859,11 @@ Earnings/sec: ${this.earningsPerSecond}
       this.revCoins = (this.revCoins || 0) + amount;
       this.updatePRCStoreDisplay();
       this.updateCurrencyDisplay();
+      
+      // Track cash deposit for economy monitoring
+      this.trackCashDeposit(cost, 'USD');
+      this.trackPlayerEngagement('purchased_rc');
+      
       toast(this, `💰 Purchased ${amount} Regular RevCoins! (Simulated)`);
     }
   };
@@ -2999,6 +2877,11 @@ Earnings/sec: ${this.earningsPerSecond}
       this.premiumRevCoins = (this.premiumRevCoins || 0) + gain;
       this.updatePRCStoreDisplay();
       this.updateCurrencyDisplay();
+      
+      // Track ad watched for economy monitoring
+      this.trackAdWatched('prc_reward');
+      this.trackPlayerEngagement('watched_ad_for_prc');
+      
       // Use window.toast directly to avoid context issues
       if (typeof window.toast === 'function') {
         window.toast(`🎁 Earned ${gain} Premium RevCoins from ad!`, 'success');
@@ -3023,11 +2906,24 @@ _def(EmpireClickGame.prototype, '_pushTreasury', function(amount) {
 });
 
 _def(EmpireClickGame.prototype, '_toast', function(msg) {
-  const box = document.getElementById('gameMessage');
-  if (!box) { alert(msg); return; }
-  box.textContent = msg;
-  box.style.display = 'block';
-  setTimeout(() => (box.style.display = 'none'), 2500);
+  // Use the new polished toast system if available
+  if (typeof window.showToast === 'function') {
+    // Determine toast type based on message content
+    let type = 'info';
+    if (msg.includes('✅') || msg.includes('💰') || msg.includes('🏆') || msg.includes('🎲')) {
+      type = 'success';
+    } else if (msg.includes('❌') || msg.includes('Not enough') || msg.includes('No')) {
+      type = 'error';
+    }
+    window.showToast(msg, type, 3000);
+  } else {
+    // Fallback to old system
+    const box = document.getElementById('gameMessage');
+    if (!box) { alert(msg); return; }
+    box.textContent = msg;
+    box.style.display = 'block';
+    setTimeout(() => (box.style.display = 'none'), 2500);
+  }
 });
 
 _def(EmpireClickGame.prototype, '_nowSec', () => Math.floor(Date.now() / 1000));
@@ -3190,6 +3086,11 @@ _def(EmpireClickGame.prototype, 'boostTax', function() {
   // Watch ad to progress toward clearing property tax (3 ads needed)
   this.propertyTaxAdsWatched = (this.propertyTaxAdsWatched || 0) + 1;
   this._toast(`📺 Property tax ad watched: ${this.propertyTaxAdsWatched}/3`);
+  
+  // Track ad watched for economy monitoring
+  this.trackAdWatched('property_tax');
+  this.trackPlayerEngagement('watched_ad_for_property_tax');
+  
   if (this.propertyTaxAdsWatched >= 3) {
     this.clearPropertyTax();
     this._toast('✅ Property tax cleared by ads.');
@@ -3201,6 +3102,15 @@ _def(EmpireClickGame.prototype, 'updatePropertyTaxProgress', function() {
   const progressEl = document.getElementById('propertyTaxProgress');
   if (progressEl) {
     progressEl.textContent = `${this.propertyTaxAdsWatched || 0}/3`;
+  }
+});
+
+_def(EmpireClickGame.prototype, 'toggleMusicMinimize', function() {
+  const musicPanel = document.getElementById('musicControls');
+  const minimizeBtn = document.getElementById('musicMinimize');
+  if (musicPanel && minimizeBtn) {
+    musicPanel.classList.toggle('minimized');
+    minimizeBtn.textContent = musicPanel.classList.contains('minimized') ? '+' : '−';
   }
 });
 
@@ -3475,110 +3385,36 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
     if (typeof _init === 'function') _init.call(this);
 
     // tickers
-    if (!this.__eventTicker) this.__eventTicker = setInterval(()=> this.tickEvents?.(), 1000);
-    if (!this.__eventUiTicker) this.__eventUiTicker = setInterval(()=> this.updateEventUI?.(), 1000);
+    // Event ticking handled by main event system
+    // Event UI updates handled by main updateEventDisplay function
     if (!this.__drawTicker) this.__drawTicker = setInterval(()=> this.resolveKingsDrawIfDue?.(), 1000);
 
     // PRC Store is now handled by createPRCStore() in the main init
-    this.updateEventUI?.();
+    this.updateEventDisplay();
   };
 
   // ---------- Events UI ----------
-  P.updateEventUI = P.updateEventUI || function(){
-    const name = this.activeEvent || (this.auditFineActive ? 'Audit Infraction' : 'None');
-    text('currentEventDisplay', name);
+  // Using main updateEventDisplay function instead of conflicting updateEventUI
 
-    if (this.activeEvent && this.eventTimer > 0) {
-      const s = Math.max(0, this.eventTimer|0);
-      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
-      text('eventTimerDisplay', `${h}h ${m}m ${ss}s`);
-    } else {
-      text('eventTimerDisplay', this.auditFineActive ? '—' : '0h 0m 0s');
-    }
-
-    let effect = 'No effect';
-    switch (this.activeEvent) {
-      case 'Lucky Surge':           
-        effect = '🔍 Exploration success rate +25%\n\nDuring this event, your chances of successfully exploring plots are increased by 25%. This makes it easier to find rare buildings and expand your empire!'; 
-        break;
-      case 'Land Takeover Madness': 
-        effect = '🏰 Elite plots on sale: 125 PRC (100 + 25 to Treasury)\n\nElite plots are now available for purchase! The cost is 125 PRC total - 100 PRC for the plot and 25 PRC goes to the Treasury pool for the King\'s Draw.'; 
-        break;
-      case 'Kings Festival':        
-        effect = '👑 2× earnings on all plots\n\nAll your plots now generate double earnings! This is the perfect time to maximize your income and grow your empire faster.'; 
-        break;
-
-      default:
-        if (this.auditFineActive) {
-          effect = '⚠️ Audit Infraction: Clear by 3 ads or pay 125 PRC\n\nYou\'ve been audited! You must either watch 3 ads or pay 125 PRC to clear this. If you don\'t clear it within 3 days, you\'ll receive a 500 PRC fine.';
-        }
-        break;
-    }
-    // append outstanding fine info if any
-    if (this.outstandingFinePRC > 0) {
-      effect += `  (Outstanding Fine: ${this.outstandingFinePRC} PRC)`;
-    }
-    text('eventEffectDisplay', effect);
-
-    const auditBtn = document.getElementById('auditButton');
-    if (auditBtn) auditBtn.style.display = this.auditFineActive ? 'inline-block' : 'none';
-  };
-
-  P.startEvent = P.startEvent || function(name, seconds){
-    this.activeEvent = name;
-    this.eventTimer = seconds ?? (this.EVENTS?.[name]?.durationSec || 3600);
-    if (name === 'Audit Infraction') {
-      this.auditFineActive = true;
-      this.auditFineAdsWatched = 0;
-      this.auditStartAt = Date.now();
-      toast(this, '⚠️ Audit Infraction started: clear by 3 ads or pay 125 PRC (to Treasury).');
-    }
-    this.updateEventUI?.();
-  };
-
-  P.endEvent = P.endEvent || function(){
-    // audit persists until cleared; end only removes banner
-    this.activeEvent = null;
-    this.eventTimer = 0;
-    this.updateEventUI?.();
-  };
-
-  P.tickEvents = P.tickEvents || function(){
-    // If no active event, randomly start one
-    if (!this.activeEvent && Math.random() < 0.001) { // 0.1% chance per second
-      const randomEvent = this.eventsList[Math.floor(Math.random() * this.eventsList.length)];
-      this.startEvent(randomEvent);
-      console.log(`🎉 Event started: ${randomEvent}`);
-      alert(`🎉 Special Event: ${randomEvent}!\n\nThis event will last for 6 hours!`);
-    }
-    
-    if (this.activeEvent && this.eventTimer > 0) {
-      this.eventTimer--;
-      if (this.eventTimer <= 0) this.endEvent();
-    }
-    // 3-day deadline: if audit still active, add a fine of 500 PRC (once)
-    if (this.auditFineActive && this.auditStartAt > 0 &&
-        Date.now() - this.auditStartAt >= this.auditClearDeadlineMs &&
-        (this.__fineAppliedAt || 0) < this.auditStartAt) {
-      this.outstandingFinePRC += 500;
-      this.__fineAppliedAt = Date.now();
-      toast(this, '💸 Audit overdue: 500 PRC fine applied.');
-    }
-    this.updateEventUI?.();
-  };
+  // REMOVED: Conflicting event system - using main event system instead
 
   // ---------- Audit actions ----------
   P.watchAuditAd = P.watchAuditAd || function(){
     if (!this.auditFineActive) return toast(this,'No audit to clear.');
     this.auditFineAdsWatched = (this.auditFineAdsWatched||0) + 1;
     toast(this, `📺 Audit ad watched: ${this.auditFineAdsWatched}/3`);
+    
+    // Track ad watched for economy monitoring
+    this.trackAdWatched('audit_infraction');
+    this.trackPlayerEngagement('watched_ad_for_audit');
+    
     if (this.auditFineAdsWatched >= 3) {
       this.auditFineActive = false;
       this.auditStartAt = 0;
       this.auditFineAdsWatched = 0;
       toast(this, '✅ Audit cleared by ads. Remember to clear property tax to resume the 6h cycle.');
     }
-    this.updateEventUI?.();
+    this.updateEventDisplay();
   };
 
   P.payAuditWithPRC = P.payAuditWithPRC || function(){
@@ -3590,7 +3426,7 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
     this.auditFineActive = false;
     this.auditStartAt = 0;
     this.auditFineAdsWatched = 0;
-    this.updateCurrencyDisplay?.(); this.updateEventUI?.();
+    this.updateCurrencyDisplay?.(); this.updateEventDisplay();
     toast(this,'✅ Audit cleared with PRC.');
   };
 
@@ -3602,7 +3438,7 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
     this.premiumRevCoins -= due;
     this.addTreasuryPRC(due, 'Audit Overdue Fine');
     this.outstandingFinePRC = 0;
-    this.updateCurrencyDisplay?.(); this.updateEventUI?.();
+    this.updateCurrencyDisplay?.(); this.updateEventDisplay();
     toast(this,'✅ Outstanding fine paid.');
   };
 
@@ -3613,18 +3449,21 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
     if (document.getElementById('earnPRCWidget')) return;
     const box = document.createElement('div');
     box.id = 'earnPRCWidget';
-    box.style.cssText = 'position:fixed;right:20px;bottom:120px;z-index:2001;background:rgba(0,0,0,.85);color:#fff;border:2px solid #20c997;border-radius:12px;padding:10px 12px;width:240px;font-family:monospace;box-shadow:0 8px 18px rgba(0,0,0,.5);cursor:move;user-select:none;';
+    box.className = 'overlay-panel ec-glass';
+    box.style.cssText = 'right:20px;bottom:120px;width:240px;font-family:monospace;';
     box.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom:6px;cursor:move;">
-        <div style="font-weight:800;color:#9CF;">💎 Premium RevCoins (Drag to move)</div>
-        <button id="prcWidgetMinimize" style="background: none; border: none; color: #9CF; font-size: 14px; cursor: pointer; padding: 0; margin: 0;">−</button>
-      </div>
-      <div id="prcWidgetContent">
-        <div style="display:flex;gap:8px;">
-          <button id="btnEarnPRC" style="background:#20c997;border:none;color:#fff;padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;">Watch Ad (+PRC)</button>
-          <button id="btnPayFinePRC" style="background:#0dcaf0;border:none;color:#000;padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;">Pay Fine</button>
+      <button class="minimize-btn" id="prcWidgetMinimize">−</button>
+      <div class="overlay-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom:6px;cursor:move;">
+          <div style="font-weight:800;color:#9CF;">💎 Premium RevCoins</div>
         </div>
-        <div id="prcHint" style="margin-top:6px;font-size:12px;opacity:.8;">Ads grant 10–50 PRC.</div>
+        <div id="prcWidgetContent">
+          <div style="display:flex;gap:8px;">
+            <button id="btnEarnPRC" style="background:#20c997;border:none;color:#fff;padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;">Watch Ad (+PRC)</button>
+            <button id="btnPayFinePRC" style="background:#0dcaf0;border:none;color:#000;padding:6px 10px;border-radius:8px;font-weight:700;cursor:pointer;">Pay Fine</button>
+          </div>
+          <div id="prcHint" style="margin-top:6px;font-size:12px;opacity:.8;">Ads grant 10–50 PRC.</div>
+        </div>
       </div>
     `;
     document.body.appendChild(box);
@@ -3636,18 +3475,10 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
     
     // Add minimize functionality
     const minimizeBtn = document.getElementById('prcWidgetMinimize');
-    const content = document.getElementById('prcWidgetContent');
-    if (minimizeBtn && content) {
+    if (minimizeBtn) {
       minimizeBtn.onclick = () => {
-        if (content.style.display === 'none') {
-          content.style.display = 'block';
-          minimizeBtn.textContent = '−';
-          box.style.width = '240px';
-        } else {
-          content.style.display = 'none';
-          minimizeBtn.textContent = '+';
-          box.style.width = 'auto';
-        }
+        box.classList.toggle('minimized');
+        minimizeBtn.textContent = box.classList.contains('minimized') ? '+' : '−';
       };
     }
   }
@@ -3734,7 +3565,8 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
 
   // ---------- Exploration with Lucky Surge (+25% relative) ----------
   P.explorePlot = function(){
-    if (!this.plotToExplore || (this.finds||0) <= 0) return alert('No explorations left for this plot.');
+    if (!this.plotToExplore) return alert('No plot selected for exploration.');
+    if ((this.finds||0) <= 0) return alert('No finds available! Watch an ad to get +2 finds.');
     this.finds--;
 
     let t3 = 0.05, t2 = 0.20, t1 = 0.50;
@@ -3819,6 +3651,124 @@ _def(EmpireClickGame.prototype, 'closeExplorationModal', function() {
       text('findsDisplay', this.finds||0);
       text('premiumRevCoinsDisplay', Math.floor(this.premiumRevCoins||0));
       this.updatePropertyTaxProgress?.();
+      this.updateEventDisplay?.(); // Update event display in main UI loop
     };
   }
 })();
+
+// Economy Monitoring Functions for Admin Panel
+P.initAdminEconomyMonitoring = function() {
+    // Initialize economy data structure in localStorage
+    const economyData = JSON.parse(localStorage.getItem('empireClickEconomyData') || '{}');
+    
+    // Initialize if not exists
+    if (!economyData.totalEarnings) economyData.totalEarnings = 0;
+    if (!economyData.dailyEarnings) economyData.dailyEarnings = {};
+    if (!economyData.dailyAdsWatched) economyData.dailyAdsWatched = {};
+    if (!economyData.totalAdsWatched) economyData.totalAdsWatched = 0;
+    if (!economyData.cashDeposits) economyData.cashDeposits = 0;
+    if (!economyData.adRevenueHistory) economyData.adRevenueHistory = [];
+    if (!economyData.playerEngagementHistory) economyData.playerEngagementHistory = [];
+    
+    localStorage.setItem('empireClickEconomyData', JSON.stringify(economyData));
+    
+    console.log('Admin economy monitoring initialized');
+};
+
+P.trackAdWatched = function(adType = 'general') {
+    const economyData = JSON.parse(localStorage.getItem('empireClickEconomyData') || '{}');
+    const today = new Date().toDateString();
+    
+    // Track daily ads watched
+    if (!economyData.dailyAdsWatched[today]) economyData.dailyAdsWatched[today] = 0;
+    economyData.dailyAdsWatched[today]++;
+    
+    // Track total ads watched
+    economyData.totalAdsWatched = (economyData.totalAdsWatched || 0) + 1;
+    
+    // Track ad revenue (estimated $0.01 per ad)
+    const adRevenue = 0.01;
+    economyData.totalEarnings = (economyData.totalEarnings || 0) + adRevenue;
+    
+    // Track daily earnings
+    if (!economyData.dailyEarnings[today]) economyData.dailyEarnings[today] = 0;
+    economyData.dailyEarnings[today] += adRevenue;
+    
+    // Add to ad revenue history
+    economyData.adRevenueHistory.push({
+        date: new Date().toISOString(),
+        adType: adType,
+        revenue: adRevenue
+    });
+    
+    // Keep only last 1000 entries
+    if (economyData.adRevenueHistory.length > 1000) {
+        economyData.adRevenueHistory = economyData.adRevenueHistory.slice(-1000);
+    }
+    
+    localStorage.setItem('empireClickEconomyData', JSON.stringify(economyData));
+};
+
+P.trackCashDeposit = function(amount, currency = 'USD') {
+    const economyData = JSON.parse(localStorage.getItem('empireClickEconomyData') || '{}');
+    
+    economyData.cashDeposits = (economyData.cashDeposits || 0) + amount;
+    economyData.totalEarnings = (economyData.totalEarnings || 0) + amount;
+    
+    const today = new Date().toDateString();
+    if (!economyData.dailyEarnings[today]) economyData.dailyEarnings[today] = 0;
+    economyData.dailyEarnings[today] += amount;
+    
+    localStorage.setItem('empireClickEconomyData', JSON.stringify(economyData));
+};
+
+P.trackPlayerEngagement = function(action = 'general') {
+    const economyData = JSON.parse(localStorage.getItem('empireClickEconomyData') || '{}');
+    
+    economyData.playerEngagementHistory.push({
+        date: new Date().toISOString(),
+        action: action,
+        playerName: this.playerName || 'Unknown'
+    });
+    
+    // Keep only last 500 entries
+    if (economyData.playerEngagementHistory.length > 500) {
+        economyData.playerEngagementHistory = economyData.playerEngagementHistory.slice(-500);
+    }
+    
+    localStorage.setItem('empireClickEconomyData', JSON.stringify(economyData));
+};
+
+P.getEconomyData = function() {
+    return JSON.parse(localStorage.getItem('empireClickEconomyData') || '{}');
+};
+
+P.updateEconomyMetrics = function() {
+    const economyData = this.getEconomyData();
+    const today = new Date().toDateString();
+    
+    // Calculate current metrics
+    const metrics = {
+        totalEarnings: economyData.totalEarnings || 0,
+        dailyEarnings: economyData.dailyEarnings?.[today] || 0,
+        treasuryBalance: this.treasuryPool || 0,
+        playerLiabilities: (this.revCoins || 0) + (this.premiumRevCoins || 0) * 10,
+        dailyAdsWatched: economyData.dailyAdsWatched?.[today] || 0,
+        totalAdsWatched: economyData.totalAdsWatched || 0,
+        cashDeposits: economyData.cashDeposits || 0,
+        netPosition: (this.treasuryPool || 0) - ((this.revCoins || 0) + (this.premiumRevCoins || 0) * 10),
+        revenueStreams: ((economyData.totalAdsWatched || 0) * 0.01) + (economyData.cashDeposits || 0),
+        playerEngagement: Math.min(100, ((economyData.dailyAdsWatched?.[today] || 0) / 10) * 100),
+        adRevenueRate: (economyData.dailyAdsWatched?.[today] || 0) * 0.01
+    };
+    
+    // Calculate site health score
+    metrics.siteHealth = Math.max(0, Math.min(100, 
+        (metrics.netPosition > 0 ? 30 : 0) + 
+        (metrics.revenueStreams > 0 ? 25 : 0) + 
+        (metrics.playerEngagement > 50 ? 25 : metrics.playerEngagement * 0.5) + 
+        (metrics.adRevenueRate > 0 ? 20 : 0)
+    ));
+    
+    return metrics;
+};

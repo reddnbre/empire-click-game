@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EmpireClick - Admin Panel</title>
+    
+    <!-- Admin Loading Screen Styles -->
+    <style>
+        #adminLoadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Admin floating decorations */
+        .admin-loading-decoration {
+            position: absolute;
+            font-size: 1.5rem;
+            opacity: 0.3;
+            animation: adminFloat 6s ease-in-out infinite;
+        }
+        
+        .admin-loading-decoration:nth-child(1) { top: 15%; left: 15%; animation-delay: 0s; }
+        .admin-loading-decoration:nth-child(2) { top: 25%; right: 20%; animation-delay: 1s; }
+        .admin-loading-decoration:nth-child(3) { top: 65%; left: 10%; animation-delay: 2s; }
+        .admin-loading-decoration:nth-child(4) { top: 75%; right: 15%; animation-delay: 3s; }
+        
+        @keyframes adminFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        
+        .admin-loading-logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: 1rem;
+            animation: adminLogoGlow 2s ease-in-out infinite alternate;
+            border: 2px solid white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        @keyframes adminLogoGlow {
+            from { text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.3); }
+        }
+        
+        .admin-loading-message {
+            font-size: 1.2rem;
+            color: white;
+            text-align: center;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+        
+        .admin-loading-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .admin-loading-subtitle {
+            font-size: 0.9rem;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+    </style>
+    <link rel="stylesheet" href="styles.css" />
+    
+    <!-- Admin Panel Styles -->
+    <style>
+        :root{
+            --admin-bg: 15 15 20;
+            --admin-card: 25 25 35;
+            --admin-accent: 255 184 77;
+            --admin-danger: 239 68 68;
+            --admin-success: 34 197 94;
+            --admin-text: 240 240 248;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .admin-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .admin-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+            min-height: calc(100vh - 200px);
+        }
+
+        .admin-panel {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid #fff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: eventSlideIn 0.5s ease-out;
+        }
+
+        .admin-panel h3 {
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 0 20px 0;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .admin-control {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .admin-control label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .admin-control input, .admin-control select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            font-weight: bold;
+        }
+
+        .admin-button {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+            border: 2px solid #fff;
+            color: white;
+            font-weight: bold;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 5px;
+            font-size: 1rem;
+        }
+
+        .admin-button:hover {
+            transform: scale(1.05);
+        }
+
+        .admin-button.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .admin-button.success {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .admin-warning {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: 2px solid #fff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .admin-warning h2 {
+            margin: 0 0 10px 0;
+            color: white;
+        }
+
+        .admin-warning p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        @keyframes eventSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .back-to-game {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: 2px solid #fff;
+            color: white;
+            font-weight: bold;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            z-index: 1000;
+        }
+
+        .back-to-game:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Loading Screen -->
+    <div id="adminLoadingScreen">
+        <!-- Admin Floating Decorations -->
+        <div class="admin-loading-decoration">🔧</div>
+        <div class="admin-loading-decoration">⚙️</div>
+        <div class="admin-loading-decoration">📊</div>
+        <div class="admin-loading-decoration">🎛️</div>
+        
+        <div class="admin-loading-logo">🔧 Admin Panel</div>
+        <div class="admin-loading-message" id="adminLoadingMessage">Loading Admin Controls...</div>
+        <div class="admin-loading-subtitle">EmpireClick Administration • Made by RevEmpire</div>
+    </div>
+    
+    <a href="index.html" class="back-to-game">← Back to Game</a>
+
+    <div class="admin-header">
+        <h1>👑 EmpireClick Admin Panel</h1>
+        <p>Administrative controls and game management</p>
+    </div>
+
+    <div class="admin-warning">
+        <h2>⚠️ Admin Access Only</h2>
+        <p>This panel contains sensitive administrative controls. Only authorized personnel should access this page.</p>
+    </div>
+
+    <div class="admin-grid">
+        <!-- Player Management -->
+        <div class="admin-panel">
+            <h3>👤 Player Management</h3>
+            
+            <div class="admin-control">
+                <label>Player Name:</label>
+                <input type="text" id="adminPlayerName" placeholder="Enter player name">
+            </div>
+            
+            <div class="admin-control">
+                <label>RevCoins:</label>
+                <input type="number" id="adminRevCoins" placeholder="Set RevCoins amount">
+            </div>
+            
+            <div class="admin-control">
+                <label>Premium RevCoins:</label>
+                <input type="number" id="adminPremiumRevCoins" placeholder="Set Premium RevCoins amount">
+            </div>
+            
+            <div class="admin-control">
+                <label>Plots Owned:</label>
+                <input type="number" id="adminPlotsOwned" placeholder="Set plots owned">
+            </div>
+            
+            <button class="admin-button success" onclick="adminUpdatePlayer()">Update Player</button>
+            <button class="admin-button" onclick="adminResetPlayer()">Reset Player</button>
+        </div>
+
+        <!-- Economy Management -->
+        <div class="admin-panel">
+            <h3>💰 Economy Management</h3>
+            
+            <div class="admin-control">
+                <label>Earnings Rate Multiplier:</label>
+                <input type="number" id="adminEarningsMultiplier" step="0.1" placeholder="1.0 = normal">
+            </div>
+            
+            <div class="admin-control">
+                <label>Treasury Pool (PRC):</label>
+                <input type="number" id="adminTreasuryPool" placeholder="Set treasury amount">
+            </div>
+            
+            <div class="admin-control">
+                <label>Kings Draw Pool:</label>
+                <input type="number" id="adminKingsDrawPool" placeholder="Set draw pool">
+            </div>
+            
+            <button class="admin-button success" onclick="adminUpdateEconomy()">Update Economy</button>
+            <button class="admin-button danger" onclick="adminResetEconomy()">Reset Economy</button>
+        </div>
+
+        <!-- Event Management -->
+        <div class="admin-panel">
+            <h3>🎉 Event Management</h3>
+            
+            <div class="admin-control">
+                <label>Force Event:</label>
+                <select id="adminEventSelect">
+                    <option value="">Select Event</option>
+                    <option value="Lucky Surge">Lucky Surge</option>
+                    <option value="Land Takeover Madness">Land Takeover Madness</option>
+                    <option value="Audit Infraction">Audit Infraction</option>
+                    <option value="Kings Festival">Kings Festival</option>
+                </select>
+            </div>
+            
+            <div class="admin-control">
+                <label>Event Duration (seconds):</label>
+                <input type="number" id="adminEventDuration" placeholder="14400 = 4 hours">
+            </div>
+            
+            <button class="admin-button success" onclick="adminStartEvent()">Start Event</button>
+            <button class="admin-button danger" onclick="adminEndEvent()">End Event</button>
+            <button class="admin-button" onclick="adminClearAudit()">Clear Audit</button>
+        </div>
+
+        <!-- Game Settings -->
+        <div class="admin-panel">
+            <h3>⚙️ Game Settings</h3>
+            
+            <div class="admin-control">
+                <label>Boost Duration (seconds):</label>
+                <input type="number" id="adminBoostDuration" placeholder="3600 = 1 hour">
+            </div>
+            
+            <div class="admin-control">
+                <label>Finds Available:</label>
+                <input type="number" id="adminFindsAvailable" placeholder="Set finds count">
+            </div>
+            
+            <div class="admin-control">
+                <label>Login Streak:</label>
+                <input type="number" id="adminLoginStreak" placeholder="Set login streak">
+            </div>
+            
+            <button class="admin-button success" onclick="adminUpdateSettings()">Update Settings</button>
+            <button class="admin-button" onclick="adminGiveBoost()">Give Boost</button>
+            <button class="admin-button" onclick="adminGiveFinds()">Give Finds</button>
+        </div>
+
+                 <!-- Economy Monitoring Dashboard -->
+         <div class="admin-panel">
+             <h3>💰 Economy Monitoring Dashboard</h3>
+             
+             <div class="admin-stats">
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminTotalEarnings">0</div>
+                     <div class="stat-label">Total Earnings (All Time)</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminDailyEarnings">0</div>
+                     <div class="stat-label">Today's Earnings</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminTreasuryBalance">0</div>
+                     <div class="stat-label">Treasury (Assets)</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminPlayerLiabilities">0</div>
+                     <div class="stat-label">Player Liabilities</div>
+                 </div>
+             </div>
+             
+             <div class="admin-stats">
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminDailyAdsWatched">0</div>
+                     <div class="stat-label">Ads Watched Today</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminTotalAdsWatched">0</div>
+                     <div class="stat-label">Total Ads Watched</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminCashDeposits">0</div>
+                     <div class="stat-label">Cash Deposits</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminSiteHealth">0%</div>
+                     <div class="stat-label">Site Health Score</div>
+                 </div>
+             </div>
+             
+             <div class="admin-control">
+                 <label>Financial Summary:</label>
+                 <div id="adminFinancialSummary" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 0.9rem; line-height: 1.4;">
+                     <div><strong>Net Position:</strong> <span id="adminNetPosition">0</span></div>
+                     <div><strong>Revenue Streams:</strong> <span id="adminRevenueStreams">0</span></div>
+                     <div><strong>Player Engagement:</strong> <span id="adminPlayerEngagement">0%</span></div>
+                     <div><strong>Ad Revenue Rate:</strong> <span id="adminAdRevenueRate">0</span></div>
+                 </div>
+             </div>
+             
+             <button class="admin-button" onclick="adminRefreshEconomyStats()">Refresh Economy Stats</button>
+             <button class="admin-button" onclick="adminExportEconomyReport()">Export Economy Report</button>
+             <button class="admin-button danger" onclick="adminClearAllData()">Clear All Data</button>
+         </div>
+
+         <!-- System Stats -->
+         <div class="admin-panel">
+             <h3>📊 System Statistics</h3>
+             
+             <div class="admin-stats">
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminStatPlayers">0</div>
+                     <div class="stat-label">Active Players</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminStatPlots">0</div>
+                     <div class="stat-label">Total Plots</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminStatEvents">0</div>
+                     <div class="stat-label">Events Today</div>
+                 </div>
+                 <div class="stat-card">
+                     <div class="stat-value" id="adminStatRevenue">0</div>
+                     <div class="stat-label">Total Revenue</div>
+                 </div>
+             </div>
+             
+             <button class="admin-button" onclick="adminRefreshStats()">Refresh Stats</button>
+         </div>
+
+        <!-- Region Management -->
+        <div class="admin-panel">
+            <h3>🗺️ Region Management</h3>
+            
+            <div class="admin-control">
+                <label>Current Region:</label>
+                <input type="text" id="adminCurrentRegion" readonly placeholder="Current region">
+            </div>
+            
+            <div class="admin-control">
+                <label>Regions Owned:</label>
+                <input type="number" id="adminRegionsOwned" readonly placeholder="Number of regions">
+            </div>
+            
+            <div class="admin-control">
+                <label>Total Plots Claimed:</label>
+                <input type="number" id="adminTotalPlotsClaimed" readonly placeholder="Total plots claimed">
+            </div>
+            
+            <div class="admin-control">
+                <label>New Region Name:</label>
+                <input type="text" id="adminNewRegionName" placeholder="Enter region name">
+            </div>
+            
+            <button class="admin-button success" onclick="adminCreateRegion()">🏗️ Create New Region</button>
+            <button class="admin-button" onclick="adminListRegions()">📋 List All Regions</button>
+            <button class="admin-button" onclick="adminSwitchRegion()">🔄 Switch Region</button>
+            <button class="admin-button danger" onclick="adminDeleteRegion()">🗑️ Delete Region</button>
+            
+            <div class="admin-control">
+                <label>Available Regions:</label>
+                <select id="adminRegionSelect">
+                    <option value="">Select region to switch to</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Debug Tools -->
+        <div class="admin-panel">
+            <h3>🔧 Debug Tools</h3>
+            
+            <button class="admin-button" onclick="adminTestEvent()">Test Event System</button>
+            <button class="admin-button" onclick="adminTestFindSystem()">Test Find System</button>
+            <button class="admin-button" onclick="adminTestOfflineEarnings()">Test Offline Earnings</button>
+            <button class="admin-button" onclick="adminShowGameState()">Show Game State</button>
+            <button class="admin-button" onclick="adminExportData()">Export Game Data</button>
+            <button class="admin-button" onclick="adminImportData()">Import Game Data</button>
+        </div>
+    </div>
+
+    <script>
+        // Admin Panel Functions
+        function adminUpdatePlayer() {
+            const playerName = document.getElementById('adminPlayerName').value;
+            const revCoins = document.getElementById('adminRevCoins').value;
+            const premiumRevCoins = document.getElementById('adminPremiumRevCoins').value;
+            const plotsOwned = document.getElementById('adminPlotsOwned').value;
+            
+            if (window.game) {
+                if (playerName) game.playerName = playerName;
+                if (revCoins) game.revCoins = parseFloat(revCoins);
+                if (premiumRevCoins) game.premiumRevCoins = parseFloat(premiumRevCoins);
+                if (plotsOwned) game.plotsClaimed = parseInt(plotsOwned);
+                
+                game.updateUI();
+                alert('✅ Player data updated successfully!');
+            } else {
+                alert('❌ Game not loaded. Please open the main game first.');
+            }
+        }
+
+        function adminResetPlayer() {
+            if (confirm('⚠️ Are you sure you want to reset the player data?')) {
+                if (window.game) {
+                    game.revCoins = 1000;
+                    game.premiumRevCoins = 0;
+                    game.plotsClaimed = 0;
+                    game.earnings = 0;
+                    game.withdrawalBalance = 0;
+                    game.finds = 3;
+                    game.loginStreak = 0;
+                    game.updateUI();
+                    alert('✅ Player data reset successfully!');
+                }
+            }
+        }
+
+        function adminUpdateEconomy() {
+            const multiplier = document.getElementById('adminEarningsMultiplier').value;
+            const treasury = document.getElementById('adminTreasuryPool').value;
+            const drawPool = document.getElementById('adminKingsDrawPool').value;
+            
+            if (window.game) {
+                if (multiplier) {
+                    // Apply earnings multiplier
+                    game.earningsPerSecond *= parseFloat(multiplier);
+                }
+                if (treasury) game.treasuryPool = parseFloat(treasury);
+                if (drawPool) game.kingsDrawPool = parseFloat(drawPool);
+                
+                game.updateUI();
+                alert('✅ Economy updated successfully!');
+            }
+        }
+
+        function adminResetEconomy() {
+            if (confirm('⚠️ Are you sure you want to reset the economy?')) {
+                if (window.game) {
+                    game.treasuryPool = 0;
+                    game.kingsDrawPool = 0;
+                    game.earningsPerSecond = game.baseEarningsPerSecond;
+                    game.updateUI();
+                    alert('✅ Economy reset successfully!');
+                }
+            }
+        }
+
+        function adminStartEvent() {
+            const eventName = document.getElementById('adminEventSelect').value;
+            const duration = document.getElementById('adminEventDuration').value || 14400;
+            
+            if (window.game && eventName) {
+                game.activeEvent = eventName;
+                game.eventTimer = parseInt(duration);
+                game.updateEventDisplay();
+                game.showEventNotification();
+                alert(`✅ Event "${eventName}" started for ${duration} seconds!`);
+            } else {
+                alert('❌ Please select an event and ensure game is loaded.');
+            }
+        }
+
+        function adminEndEvent() {
+            if (window.game) {
+                game.endCurrentEvent();
+                alert('✅ Event ended successfully!');
+            }
+        }
+
+        function adminClearAudit() {
+            if (window.game) {
+                game.auditFineActive = false;
+                game.auditFineAdsWatched = 0;
+                game.outstandingFinePRC = 0;
+                game.updateEventDisplay();
+                alert('✅ Audit infraction cleared!');
+            }
+        }
+
+        function adminUpdateSettings() {
+            const boostDuration = document.getElementById('adminBoostDuration').value;
+            const finds = document.getElementById('adminFindsAvailable').value;
+            const loginStreak = document.getElementById('adminLoginStreak').value;
+            
+            if (window.game) {
+                if (boostDuration) game.boostSecondsRemaining = parseInt(boostDuration);
+                if (finds) game.finds = parseInt(finds);
+                if (loginStreak) game.loginStreak = parseInt(loginStreak);
+                
+                game.updateUI();
+                alert('✅ Settings updated successfully!');
+            }
+        }
+
+        function adminGiveBoost() {
+            if (window.game) {
+                game.boostSecondsRemaining += 3600; // 1 hour
+                game.updateBoostUI();
+                alert('✅ 1 hour boost added!');
+            }
+        }
+
+        function adminGiveFinds() {
+            if (window.game) {
+                game.finds += 5;
+                game.updateFindsUI();
+                alert('✅ 5 finds added!');
+            }
+        }
+
+                 function adminRefreshStats() {
+             if (window.game) {
+                 document.getElementById('adminStatPlayers').textContent = '1'; // Single player game
+                 document.getElementById('adminStatPlots').textContent = game.plotsClaimed || 0;
+                 document.getElementById('adminStatEvents').textContent = '1'; // Placeholder
+                 document.getElementById('adminStatRevenue').textContent = Math.floor(game.treasuryPool || 0);
+                 alert('✅ Stats refreshed!');
+             }
+         }
+
+         function adminRefreshEconomyStats() {
+             if (window.game) {
+                 // Use the game's economy monitoring functions
+                 const metrics = game.updateEconomyMetrics();
+                 
+                 // Update display
+                 document.getElementById('adminTotalEarnings').textContent = metrics.totalEarnings.toFixed(2);
+                 document.getElementById('adminDailyEarnings').textContent = metrics.dailyEarnings.toFixed(2);
+                 document.getElementById('adminTreasuryBalance').textContent = metrics.treasuryBalance.toFixed(2);
+                 document.getElementById('adminPlayerLiabilities').textContent = metrics.playerLiabilities.toFixed(2);
+                 document.getElementById('adminDailyAdsWatched').textContent = metrics.dailyAdsWatched;
+                 document.getElementById('adminTotalAdsWatched').textContent = metrics.totalAdsWatched;
+                 document.getElementById('adminCashDeposits').textContent = metrics.cashDeposits.toFixed(2);
+                 document.getElementById('adminSiteHealth').textContent = metrics.siteHealth.toFixed(0) + '%';
+                 
+                 // Update financial summary
+                 document.getElementById('adminNetPosition').textContent = metrics.netPosition.toFixed(2);
+                 document.getElementById('adminRevenueStreams').textContent = metrics.revenueStreams.toFixed(2);
+                 document.getElementById('adminPlayerEngagement').textContent = metrics.playerEngagement.toFixed(0) + '%';
+                 document.getElementById('adminAdRevenueRate').textContent = metrics.adRevenueRate.toFixed(2);
+                 
+                 alert('✅ Economy stats refreshed!');
+             }
+         }
+
+         function adminExportEconomyReport() {
+             if (window.game) {
+                 const metrics = game.updateEconomyMetrics();
+                 const economyData = game.getEconomyData();
+                 
+                 const report = {
+                     reportDate: new Date().toISOString(),
+                     gameState: {
+                         playerName: game.playerName,
+                         revCoins: game.revCoins,
+                         premiumRevCoins: game.premiumRevCoins,
+                         treasuryPool: game.treasuryPool,
+                         kingsDrawPool: game.kingsDrawPool,
+                         plotsClaimed: game.plotsClaimed
+                     },
+                     economyMetrics: metrics,
+                     historicalData: economyData
+                 };
+                 
+                 const dataStr = JSON.stringify(report, null, 2);
+                 const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                 const url = URL.createObjectURL(dataBlob);
+                 const link = document.createElement('a');
+                 link.href = url;
+                 link.download = `empireclick-economy-report-${new Date().toISOString().split('T')[0]}.json`;
+                 link.click();
+                 URL.revokeObjectURL(url);
+                 alert('✅ Economy report exported successfully!');
+             }
+         }
+
+        function adminClearAllData() {
+            if (confirm('⚠️ WARNING: This will clear ALL game data. Are you absolutely sure?')) {
+                if (window.game) {
+                    localStorage.clear();
+                    alert('✅ All game data cleared! Please refresh the page.');
+                }
+            }
+        }
+
+        function adminTestEvent() {
+            if (window.game) {
+                game.testEvent();
+                alert('✅ Event system test triggered! Check console for details.');
+            }
+        }
+
+        function adminTestFindSystem() {
+            if (window.game) {
+                game.testFindSystem();
+                alert('✅ Find system test triggered! Check console for details.');
+            }
+        }
+
+        function adminTestOfflineEarnings() {
+            if (window.game) {
+                game.testOfflineEarnings();
+                alert('✅ Offline earnings test triggered! Check console for details.');
+            }
+        }
+
+        function adminShowGameState() {
+            if (window.game) {
+                console.log('🎮 Current Game State:', {
+                    playerName: game.playerName,
+                    revCoins: game.revCoins,
+                    premiumRevCoins: game.premiumRevCoins,
+                    plotsClaimed: game.plotsClaimed,
+                    earnings: game.earnings,
+                    activeEvent: game.activeEvent,
+                    eventTimer: game.eventTimer,
+                    finds: game.finds,
+                    boostSecondsRemaining: game.boostSecondsRemaining,
+                    treasuryPool: game.treasuryPool,
+                    kingsDrawPool: game.kingsDrawPool
+                });
+                alert('✅ Game state logged to console!');
+            }
+        }
+
+        function adminExportData() {
+            if (window.game) {
+                const gameData = {
+                    playerName: game.playerName,
+                    revCoins: game.revCoins,
+                    premiumRevCoins: game.premiumRevCoins,
+                    plotsClaimed: game.plotsClaimed,
+                    earnings: game.earnings,
+                    treasuryPool: game.treasuryPool,
+                    kingsDrawPool: game.kingsDrawPool,
+                    loginStreak: game.loginStreak,
+                    finds: game.finds,
+                    boostSecondsRemaining: game.boostSecondsRemaining,
+                    activeEvent: game.activeEvent,
+                    eventTimer: game.eventTimer
+                };
+                
+                const dataStr = JSON.stringify(gameData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'empireclick-game-data.json';
+                link.click();
+                URL.revokeObjectURL(url);
+                alert('✅ Game data exported successfully!');
+            }
+        }
+
+        function adminImportData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const gameData = JSON.parse(e.target.result);
+                            if (window.game) {
+                                Object.assign(game, gameData);
+                                game.updateUI();
+                                alert('✅ Game data imported successfully!');
+                            }
+                        } catch (error) {
+                            alert('❌ Error importing data: ' + error.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        // Region Management Functions
+        function adminCreateRegion() {
+            const regionName = document.getElementById('adminNewRegionName').value;
+            
+            if (!regionName || regionName.trim() === "") {
+                alert('❌ Please enter a region name!');
+                return;
+            }
+            
+            const cleanRegionName = regionName.trim();
+            
+            if (window.game) {
+                // Check if region already exists
+                if (game.regions.includes(cleanRegionName)) {
+                    alert(`❌ Region "${cleanRegionName}" already exists!`);
+                    return;
+                }
+                
+                // Add new region to arrays
+                game.regions.push(cleanRegionName);
+                game.regionsOwned++;
+                
+                // Initialize region data
+                game.regionData[cleanRegionName] = {
+                    plots: []
+                };
+                
+                // Create the complete world for this region
+                game.createRegionWorld(cleanRegionName);
+                
+                // Update UI
+                game.updateRegionDisplay();
+                game.updateGlobalPlotCount();
+                
+                // Clear input
+                document.getElementById('adminNewRegionName').value = '';
+                
+                // Update admin panel display
+                adminUpdateRegionDisplay();
+                
+                alert(`✅ Region "${cleanRegionName}" created successfully with 500 new plots!`);
+            } else {
+                alert('❌ Game not loaded. Please open the main game first.');
+            }
+        }
+
+        function adminListRegions() {
+            if (window.game) {
+                const regionInfo = game.regions.map(regionName => {
+                    const plotCount = game.regionData[regionName] ? game.regionData[regionName].plots.length : 0;
+                    const claimedCount = game.regionData[regionName] ? 
+                        game.regionData[regionName].plots.filter(p => p.claimed).length : 0;
+                    return `${regionName}: ${plotCount} plots (${claimedCount} claimed)`;
+                }).join('\n');
+                
+                alert(`🗺️ All Regions:\n${regionInfo}`);
+            } else {
+                alert('❌ Game not loaded. Please open the main game first.');
+            }
+        }
+
+        function adminSwitchRegion() {
+            const regionSelect = document.getElementById('adminRegionSelect');
+            const selectedRegion = regionSelect.value;
+            
+            if (!selectedRegion) {
+                alert('❌ Please select a region to switch to!');
+                return;
+            }
+            
+            if (window.game) {
+                game.switchToRegion(selectedRegion);
+                adminUpdateRegionDisplay();
+                alert(`✅ Switched to region: ${selectedRegion}`);
+            } else {
+                alert('❌ Game not loaded. Please open the main game first.');
+            }
+        }
+
+        function adminDeleteRegion() {
+            if (!window.game) {
+                alert('❌ Game not loaded. Please open the main game first.');
+                return;
+            }
+            
+            if (game.regions.length <= 1) {
+                alert('❌ Cannot delete the last region!');
+                return;
+            }
+            
+            const regionToDelete = prompt(`Enter region name to delete (available: ${game.regions.filter(r => r !== 'Default').join(', ')}):`);
+            
+            if (!regionToDelete || regionToDelete === 'Default') {
+                alert('❌ Cannot delete Default region or invalid region name!');
+                return;
+            }
+            
+            if (!game.regions.includes(regionToDelete)) {
+                alert(`❌ Region "${regionToDelete}" does not exist!`);
+                return;
+            }
+            
+            // Remove from arrays
+            game.regions = game.regions.filter(r => r !== regionToDelete);
+            delete game.regionData[regionToDelete];
+            game.regionsOwned--;
+            
+            // If we were in the deleted region, switch to Default
+            if (game.currentRegion === regionToDelete) {
+                game.switchToRegion('Default');
+            }
+            
+            game.updateRegionDisplay();
+            game.updateGlobalPlotCount();
+            adminUpdateRegionDisplay();
+            
+            alert(`✅ Region "${regionToDelete}" deleted!`);
+        }
+
+        function adminUpdateRegionDisplay() {
+            if (window.game) {
+                document.getElementById('adminCurrentRegion').value = game.currentRegion || '';
+                document.getElementById('adminRegionsOwned').value = game.regionsOwned || 0;
+                document.getElementById('adminTotalPlotsClaimed').value = game.plotsClaimed || 0;
+                
+                // Update region select dropdown
+                const regionSelect = document.getElementById('adminRegionSelect');
+                regionSelect.innerHTML = '<option value="">Select region to switch to</option>';
+                
+                game.regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    if (region === game.currentRegion) {
+                        option.selected = true;
+                    }
+                    regionSelect.appendChild(option);
+                });
+            }
+        }
+
+                 // Load current game state when admin panel opens
+         window.addEventListener('load', function() {
+             // Show admin loading messages
+             const adminMessages = [
+                 "Loading Admin Controls...",
+                 "Initializing Economy Monitoring...",
+                 "Setting Up Player Management...",
+                 "Configuring Event System...",
+                 "Preparing Region Controls...",
+                 "Loading Game Data...",
+                 "Admin Panel Ready!"
+             ];
+             
+             let adminMessageIndex = 0;
+             const adminMessageEl = document.getElementById('adminLoadingMessage');
+             
+             function updateAdminMessage() {
+                 adminMessageEl.classList.remove('show');
+                 setTimeout(() => {
+                     adminMessageEl.textContent = adminMessages[adminMessageIndex];
+                     adminMessageEl.classList.add('show');
+                     adminMessageIndex++;
+                     
+                                           if (adminMessageIndex < adminMessages.length) {
+                          setTimeout(updateAdminMessage, 1000);
+                      } else {
+                          // Hide loading screen after final message (6 seconds total)
+                          setTimeout(() => {
+                              const adminLoadingScreen = document.getElementById('adminLoadingScreen');
+                              adminLoadingScreen.style.opacity = '0';
+                              setTimeout(() => {
+                                  adminLoadingScreen.style.display = 'none';
+                              }, 500);
+                          }, 2000);
+                      }
+                 }, 300);
+             }
+             
+             updateAdminMessage();
+             
+             // Try to load game state from localStorage
+             try {
+                 const savedData = localStorage.getItem('empireClickGameData');
+                 if (savedData) {
+                     const gameData = JSON.parse(savedData);
+                     document.getElementById('adminPlayerName').value = gameData.playerName || '';
+                     document.getElementById('adminRevCoins').value = gameData.revCoins || '';
+                     document.getElementById('adminPremiumRevCoins').value = gameData.premiumRevCoins || '';
+                     document.getElementById('adminPlotsOwned').value = gameData.plotsClaimed || '';
+                     document.getElementById('adminTreasuryPool').value = gameData.treasuryPool || '';
+                     document.getElementById('adminKingsDrawPool').value = gameData.kingsDrawPool || '';
+                     document.getElementById('adminFindsAvailable').value = gameData.finds || '';
+                     document.getElementById('adminLoginStreak').value = gameData.loginStreak || '';
+                 }
+             } catch (error) {
+                 console.log('No saved game data found');
+             }
+             
+             // Update region display
+             adminUpdateRegionDisplay();
+             
+             // Refresh economy stats on load
+             setTimeout(() => {
+                 adminRefreshEconomyStats();
+             }, 1000);
+         });
+    </script>
+</body>
+</html>
